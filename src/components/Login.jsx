@@ -7,13 +7,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Scissors } from 'lucide-react';
 import logo from '../assets/logo.png';
 
-const Login = ({ onLogin }) => {
+// Definindo a interface para os dados da API para melhor tipagem
+interface LoginResponse {
+  token: string;
+  user: {
+    id: number;
+    nome: string;
+    username: string;
+    // adicione outras propriedades do usuário se houver
+  };
+}
+
+interface ErrorResponse {
+  error: string | { message: string };
+}
+
+const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -27,16 +42,23 @@ const Login = ({ onLogin }) => {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      const data: LoginResponse | ErrorResponse = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        onLogin(data.token);
+        const responseData = data as LoginResponse;
+        localStorage.setItem('token', responseData.token);
+        // Passa o objeto de usuário para a função onLogin
+        onLogin(responseData.user);
       } else {
-        setError(data.error || 'Erro ao fazer login');
+        const errorData = data as ErrorResponse;
+        // Garante que o erro seja sempre uma string
+        const errorMessage = typeof errorData.error === 'object' 
+          ? errorData.error.message 
+          : errorData.error;
+        setError(errorMessage || 'Erro ao fazer login');
       }
-    } catch (error) {
-      setError('Erro de conexão com o servidor');
+    } catch (err) {
+      setError('Erro de conexão com o servidor. Verifique sua rede.');
     } finally {
       setLoading(false);
     }
@@ -101,4 +123,3 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
-
