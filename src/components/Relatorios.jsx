@@ -1,336 +1,359 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  FileText, 
-  Download, 
-  Calendar, 
-  DollarSign,
-  TrendingUp,
-  Users
-} from 'lucide-react';
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line
+} from "recharts";
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  Download,
+  Calendar
+} from "lucide-react";
 
 const Relatorios = () => {
-  const [relatorioData, setRelatorioData] = useState({
-    totalAgendamentos: 0,
-    receitaTotal: 0,
-    clientesAtivos: 0,
-    servicosMaisRealizados: []
-  });
-  const [loading, setLoading] = useState(true);
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
+  const [servicosMaisVendidos, setServicosMaisVendidos] = useState([
+    { nome: "Corte e Barba", quantidade: 45, receita: 2025 },
+    { nome: "Corte", quantidade: 32, receita: 960 },
+    { nome: "Barba", quantidade: 28, receita: 560 },
+    { nome: "Corte, Barba e Sobrancelha", quantidade: 15, receita: 975 },
+    { nome: "Sobrancelha", quantidade: 12, receita: 180 },
+    { nome: "Corte e Sobrancelha", quantidade: 8, receita: 320 }
+  ]);
 
-  useEffect(() => {
-    // Definir datas padrão (último mês)
-    const hoje = new Date();
-    const umMesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
-    
-    setDataFim(hoje.toISOString().split('T')[0]);
-    setDataInicio(umMesAtras.toISOString().split('T')[0]);
-    
-    fetchRelatorioData();
-  }, []);
+  const [receitaTempos] = useState([
+    { periodo: "Dom", valor: 380 },
+    { periodo: "Seg", valor: 520 },
+    { periodo: "Ter", valor: 680 },
+    { periodo: "Qua", valor: 590 },
+    { periodo: "Qui", valor: 720 },
+    { periodo: "Sex", valor: 850 },
+    { periodo: "Sáb", valor: 920 }
+  ]);
 
-  const fetchRelatorioData = async () => {
+  const [frequenciaClientes] = useState([
+    { nome: "João Silva", visitas: 12, ultimaVisita: "2024-08-20", gasto: 540 },
+    { nome: "Pedro Santos", visitas: 8, ultimaVisita: "2024-08-18", gasto: 360 },
+    { nome: "Carlos Lima", visitas: 6, ultimaVisita: "2024-08-15", gasto: 270 },
+    { nome: "Marcus Oliveira", visitas: 5, ultimaVisita: "2024-08-22", gasto: 325 },
+    { nome: "Rafael Costa", visitas: 4, ultimaVisita: "2024-08-19", gasto: 180 }
+  ]);
+
+  // 🔥 Buscar dados reais da API (mantém mocks como fallback)
+useEffect(() => {
+  const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/mensal`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const res = await api.get("/api/relatorios/resumo");
 
-      if (response.ok) {
-        const data = await response.json();
-        setRelatorioData(data);
+      if (res.data) {
+        // Serviços mais vendidos
+        if (Array.isArray(res.data.by_service)) {
+          setServicosMaisVendidos(
+            res.data.by_service.map(s => ({
+              nome: s.service,
+              quantidade: s.qty,
+              receita: s.revenue / 100
+            }))
+          );
+        }
+
+        // Receita (usa totals -> transforma em períodos)
+        if (res.data.totals) {
+          setReceitaTempos([
+            { periodo: "Hoje", valor: res.data.totals.daily },
+            { periodo: "Semana", valor: res.data.totals.weekly },
+            { periodo: "Mês", valor: res.data.totals.monthly }
+          ]);
+        }
+
+        // Clientes frequentes -> ainda não tem endpoint no backend
+        // mantém mock
       }
-    } catch (error) {
-      console.error('Erro ao carregar dados do relatório:', error);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error("Erro ao buscar relatórios:", err);
+      // Se der erro, continua exibindo os mocks
     }
   };
 
-  const exportarRelatorio = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (dataInicio) params.append('dataInicio', dataInicio);
-      if (dataFim) params.append('dataFim', dataFim);
+  fetchData();
+}, []);
+  
+  const CORES_GRAFICO = [
+    '#FFD700', // Amarelo ouro
+    '#8A2BE2', // Azul violeta
+    '#FF6347', // Vermelho tomate
+    '#3CB371', // Verde mar
+    '#1E90FF', // Azul dodger
+    '#FF4500'  // Laranja avermelhado
+  ];
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/exportar?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `relatorio_barbearia_${dataInicio}_${dataFim}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Erro ao exportar relatório:', error);
-    }
-  };
-
-  const gerarRelatorio = () => {
-    fetchRelatorioData();
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
-      </div>
-    );
-  }
-
+const exportarRelatorio = () => {
+  window.print(); 
+};
+  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Relatórios</h1>
-          <p className="text-gray-600">Análise de desempenho da barbearia</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Relatórios</h1>
+          <p className="text-muted-foreground">
+            Análise de desempenho e estatísticas da barbearia
+          </p>
         </div>
+        <Button onClick={exportarRelatorio} variant="outline" className="w-full sm:w-auto">
+          <Download className="h-4 w-4 mr-2" />
+          Exportar Relatório
+        </Button>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-amber-600" />
-            Filtros do Relatório
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dataInicio">Data Início</Label>
-              <Input
-                id="dataInicio"
-                type="date"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="dataFim">Data Fim</Label>
-              <Input
-                id="dataFim"
-                type="date"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex items-end space-x-2">
-              <Button onClick={gerarRelatorio} className="bg-amber-600 hover:bg-amber-700">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Gerar Relatório
-              </Button>
-              <Button onClick={exportarRelatorio} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
-            </div>
+      <Tabs defaultValue="servicos" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="servicos" className="text-xs sm:text-sm">Serviços</TabsTrigger>
+          <TabsTrigger value="receita" className="text-xs sm:text-sm">Receita</TabsTrigger>
+          <TabsTrigger value="clientes" className="text-xs sm:text-sm">Clientes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="servicos" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Gráfico de Barras - Serviços Mais Vendidos */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                  Serviços Mais Vendidos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={servicosMaisVendidos}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="nome" 
+                      tick={{ fontSize: 10 }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px'
+                      }}
+                    />
+                    <Bar dataKey="quantidade" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Gráfico de Pizza - Distribuição de Serviços */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Distribuição de Serviços</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={servicosMaisVendidos}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="hsl(var(--accent))"
+                      dataKey="quantidade"
+                      label={({ nome, percent }) => `${nome.length > 10 ? nome.substring(0, 10) + '...' : nome} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {servicosMaisVendidos.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={CORES_GRAFICO[index % CORES_GRAFICO.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Métricas Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Total de Agendamentos
-            </CardTitle>
-            <Calendar className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {relatorioData.totalAgendamentos || 0}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              no período selecionado
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Receita Total
-            </CardTitle>
-            <DollarSign className="h-5 w-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              R$ {(relatorioData.receitaTotal || 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              faturamento no período
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Clientes Ativos
-            </CardTitle>
-            <Users className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {relatorioData.clientesAtivos || 0}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              clientes únicos
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-amber-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Ticket Médio
-            </CardTitle>
-            <TrendingUp className="h-5 w-5 text-amber-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              R$ {relatorioData.totalAgendamentos > 0 
-                ? ((relatorioData.receitaTotal || 0) / relatorioData.totalAgendamentos).toFixed(2)
-                : '0.00'
-              }
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              por atendimento
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Serviços Mais Realizados */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-amber-600" />
-            Serviços Mais Realizados
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {relatorioData.servicosMaisRealizados?.length > 0 ? (
-            <div className="space-y-4">
-              {relatorioData.servicosMaisRealizados.map((servico, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                      <span className="text-amber-600 font-semibold text-sm">
+          {/* Tabela de Ranking */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Ranking Detalhado de Serviços</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {servicosMaisVendidos.map((servico, index) => (
+                  <div key={servico.nome} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent">
                         {index + 1}
-                      </span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-foreground">{servico.nome}</h3>
+                        <p className="text-sm text-muted-foreground">{servico.quantidade} atendimentos</p>
+                      </div>
                     </div>
-                    <span className="font-medium text-gray-900">{servico.nome}</span>
+                    <div className="text-left sm:text-right">
+                      <p className="font-bold text-foreground">R$ {servico.receita.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">receita total</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-bold text-gray-900">{servico.quantidade}</span>
-                    <p className="text-xs text-gray-600">atendimentos</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                    <span className="text-amber-600 font-semibold text-sm">1</span>
-                  </div>
-                  <span className="font-medium text-gray-900">Corte e Barba</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-gray-900">15</span>
-                  <p className="text-xs text-gray-600">atendimentos</p>
-                </div>
+                ))}
               </div>
-              
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                    <span className="text-amber-600 font-semibold text-sm">2</span>
-                  </div>
-                  <span className="font-medium text-gray-900">Corte</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-gray-900">12</span>
-                  <p className="text-xs text-gray-600">atendimentos</p>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                    <span className="text-amber-600 font-semibold text-sm">3</span>
-                  </div>
-                  <span className="font-medium text-gray-900">Barba</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-gray-900">8</span>
-                  <p className="text-xs text-gray-600">atendimentos</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Informações sobre N8N */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-amber-600" />
-            Integração N8N
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">Webhook para N8N</h4>
-            <p className="text-sm text-blue-700 mb-3">
-              Use este endpoint para enviar agendamentos via N8N:
-            </p>
-            <code className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm">
-              POST http://localhost:3000/api/relatorios/n8n
-            </code>
-            <div className="mt-3">
-              <p className="text-xs text-blue-600 font-medium mb-1">Exemplo de payload:</p>
-              <pre className="bg-blue-100 text-blue-800 p-2 rounded text-xs overflow-x-auto">
-{`{
-  "tipo": "novo_agendamento",
-  "cliente": "Nome do Cliente",
-  "telefone": "(11) 99999-9999",
-  "servico": "Corte e Barba",
-  "data": "2025-09-03",
-  "hora": "14:30"
-}`}
-              </pre>
-            </div>
+        <TabsContent value="receita" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+                Receita Semanal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={receitaTempos}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="periodo" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                    formatter={(value) => [`R$ ${value}`, 'Receita']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="valor" 
+                    stroke="hsl(var(--accent))" 
+                    strokeWidth={3}
+                    dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-l-4 border-l-green-500">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg">Receita Diária</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-green-600">R$ 582,00</div>
+                <p className="text-sm text-muted-foreground">média dos últimos 7 dias</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-blue-500">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg">Receita Semanal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">R$ 4.074,00</div>
+                <p className="text-sm text-muted-foreground">esta semana</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-purple-500 sm:col-span-2 lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg">Receita Mensal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-purple-600">R$ 16.850,00</div>
+                <p className="text-sm text-muted-foreground">este mês</p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="clientes" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Users className="h-5 w-5 text-accent" />
+                Frequência dos Clientes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {frequenciaClientes.map((cliente, index) => (
+                  <div key={cliente.nome} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent">
+                        #{index + 1}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-foreground">{cliente.nome}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Última visita: {new Date(cliente.ultimaVisita).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-bold text-foreground">{cliente.visitas} visitas</p>
+                      <p className="text-sm text-muted-foreground">R$ {cliente.gasto.toFixed(2)} gasto</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm text-muted-foreground">Total de Clientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-foreground">127</div>
+                <p className="text-sm text-muted-foreground">clientes cadastrados</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm text-muted-foreground">Clientes Ativos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-foreground">89</div>
+                <p className="text-sm text-muted-foreground">últimos 30 dias</p>
+              </CardContent>
+            </Card>
+
+            <Card className="sm:col-span-2 lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="text-sm text-muted-foreground">Ticket Médio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-foreground">R$ 42,50</div>
+                <p className="text-sm text-muted-foreground">por atendimento</p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
 
 export default Relatorios;
-
