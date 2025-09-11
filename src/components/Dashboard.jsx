@@ -3,7 +3,7 @@ import Sidebar from './Sidebar';
 import DashboardContent from './DashboardContent';
 import Agenda from './Agenda';
 import Clientes from './Clientes';
-import Relatorios from '../pages/Relatorios';
+import Relatorios from './Relatorios';
 
 const Dashboard = ({ onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
