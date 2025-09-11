@@ -39,7 +39,7 @@ const Clientes = () => {
   const fetchClientes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/clientes', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/clientes', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -62,8 +62,8 @@ const Clientes = () => {
     try {
       const token = localStorage.getItem('token');
       const url = editingCliente 
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/clientes/${editingCliente.id}`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/clientes';
+        ? '${import.meta.env.VITE_API_BASE_URL}/api/clientes/${editingCliente.id}'
+        : '${import.meta.env.VITE_API_BASE_URL}/api/clientes';
       
       const method = editingCliente ? 'PUT' : 'POST';
       
@@ -91,7 +91,7 @@ const Clientes = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/clientes/${id}`, {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/clientes/${id}', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
