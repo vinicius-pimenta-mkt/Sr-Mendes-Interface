@@ -59,7 +59,7 @@ const Agenda = () => {
   const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/agendamentos', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -82,8 +82,8 @@ const Agenda = () => {
     try {
       const token = localStorage.getItem('token');
       const url = editingAgendamento 
-        ? `${import.meta.env.VITE_API_BASE_URL}/pi/agendamentos/${editingAgendamento.id}`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos';
+        ? '${import.meta.env.VITE_API_BASE_URL}/pi/agendamentos/${editingAgendamento.id}'
+        : '${import.meta.env.VITE_API_BASE_URL}/api/agendamentos';
       
       const method = editingAgendamento ? 'PUT' : 'POST';
       
@@ -111,7 +111,7 @@ const Agenda = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}`, {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
