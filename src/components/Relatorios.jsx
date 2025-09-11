@@ -37,7 +37,7 @@ const Relatorios = () => {
   const fetchRelatorioData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/relatorios/mensal', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/mensal`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -61,7 +61,7 @@ const Relatorios = () => {
       if (dataInicio) params.append('dataInicio', dataInicio);
       if (dataFim) params.append('dataFim', dataFim);
 
-      const response = await fetch(`http://localhost:3000/api/relatorios/exportar?${params}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/exportar?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
