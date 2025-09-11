@@ -3,7 +3,7 @@ import Sidebar from './Sidebar';
 import DashboardContent from './DashboardContent';
 import Agenda from './Agenda';
 import Clientes from './Clientes';
-import Relatorios from './Relatorios';
+import Relatorios from '../pages/Relatorios';
 
 const Dashboard = ({ onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -28,8 +28,8 @@ const Dashboard = ({ onLogout }) => {
         onSectionChange={setActiveSection}
         onLogout={onLogout}
       />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-auto lg:ml-0">
+        <div className="p-4 lg:p-8 pt-16 lg:pt-8">
           {renderContent()}
         </div>
       </main>
