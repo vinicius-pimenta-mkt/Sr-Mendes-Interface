@@ -255,7 +255,7 @@ const Relatorios = () => {
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                     <Legend 
-                      content={renderLegenda}
+                      content={renderLegend}
                       wrapperStyle={{ paddingTop: '20px' }}
                     />
                   </PieChart>
