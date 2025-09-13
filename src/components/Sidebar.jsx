@@ -29,7 +29,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
   return (
     <>
       {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-4 right-4 z-50">
         <Button
           variant="outline"
           size="sm"
@@ -51,8 +51,8 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
       {/* Sidebar */}
       <div className={`
         fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-40
-        w-64 bg-white shadow-lg h-screen flex flex-col
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        w-64 bg-white shadow-lg h-screen flex flex-col right-0 lg:right-auto
+        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
       `}>
         {/* Header */}
         <div className="p-6 border-b">
