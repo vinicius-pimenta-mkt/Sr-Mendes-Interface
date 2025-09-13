@@ -10,6 +10,7 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const DashboardContent = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -86,9 +87,12 @@ const DashboardContent = () => {
   return (
     <div className="space-y-6">
       {/* Dashboard Title */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Visão geral do dia - {new Date().toLocaleDateString('pt-BR')}</p>
+      <div className="flex items-center space-x-4">
+        <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Visão geral do dia - {new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
       </div>
 
       {/* Stats Cards */}
