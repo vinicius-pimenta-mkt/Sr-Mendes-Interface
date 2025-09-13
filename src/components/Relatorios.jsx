@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart,
   Bar,
@@ -14,16 +15,19 @@ import {
   Pie,
   Cell,
   LineChart,
-  Line
+  Line,
+  Legend
 } from "recharts";
 import {
   BarChart3,
   TrendingUp,
   Users,
-  Download
+  Download,
+  Calendar
 } from "lucide-react";
 
 const Relatorios = () => {
+  const [periodo, setPeriodo] = useState("mes");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([
     { nome: "Corte e Barba", quantidade: 45, receita: 2025 },
     { nome: "Corte", quantidade: 32, receita: 960 },
@@ -56,7 +60,7 @@ const Relatorios = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo?periodo=${periodo}`, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },
@@ -100,20 +104,58 @@ const Relatorios = () => {
     };
 
     fetchData();
-  }, []);
+  }, [periodo]);
 
-  // 🎨 Paleta preto + amarelo
+  // 🎨 Paleta preto + amarelo com mais contraste
   const CORES_GRAFICO = [
-    "#FFC107", // amarelo
-    "#000000", // preto
-    "#4B4B4B", // cinza escuro
-    "#FFD54F", // amarelo claro
-    "#212121", // quase preto
-    "#FFB300"  // dourado
+    "#FFD700", // amarelo mais vibrante
+    "#1A1A1A", // preto mais escuro
+    "#333333", // cinza escuro
+    "#FFA500", // laranja dourado
+    "#000000", // preto puro
+    "#FFFF00"  // amarelo puro
   ];
 
   const exportarRelatorio = () => {
     window.print();
+  };
+
+  // Tooltip customizado para o gráfico de pizza (sem porcentagem)
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{data.payload.nome}</p>
+          <p className="text-sm text-gray-600">
+            Quantidade: {data.value}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Renderizar legenda customizada
+  const renderLegend = (props) => {
+    const { payload } = props;
+    return (
+      <div className="flex flex-wrap justify-center gap-2 mt-4">
+        {payload.map((entry, index) => (
+          <div key={`legend-${index}`} className="flex items-center gap-1 text-xs">
+            <div 
+              className="w-3 h-3 rounded-sm" 
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-gray-700">
+              {entry.payload.nome.length > 15 
+                ? entry.payload.nome.substring(0, 15) + "..." 
+                : entry.payload.nome}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -135,6 +177,30 @@ const Relatorios = () => {
           Exportar Relatório
         </Button>
       </div>
+
+      {/* Filtro de Período */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <Calendar className="h-5 w-5 text-amber-600" />
+            <label className="text-sm font-medium text-gray-700">
+              Período dos Relatórios:
+            </label>
+            <Select value={periodo} onValueChange={setPeriodo}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Selecione o período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semana">Última Semana</SelectItem>
+                <SelectItem value="mes">Último Mês</SelectItem>
+                <SelectItem value="trimestre">Último Trimestre</SelectItem>
+                <SelectItem value="semestre">Último Semestre</SelectItem>
+                <SelectItem value="ano">Último Ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tabs */}
       <Tabs defaultValue="servicos" className="space-y-6">
@@ -174,23 +240,24 @@ const Relatorios = () => {
                 <CardTitle className="text-lg sm:text-xl">Distribuição de Serviços</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
                       data={servicosMaisVendidos}
                       cx="50%"
-                      cy="50%"
+                      cy="40%"
                       outerRadius={80}
                       dataKey="quantidade"
-                      label={({ nome, percent }) =>
-                        `${nome.length > 10 ? nome.substring(0, 10) + "..." : nome} ${(percent * 100).toFixed(0)}%`
-                      }
                     >
                       {servicosMaisVendidos.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={CORES_GRAFICO[index % CORES_GRAFICO.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      content={renderLegenda}
+                      wrapperStyle={{ paddingTop: '20px' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
