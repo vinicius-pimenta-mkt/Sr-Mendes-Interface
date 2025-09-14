@@ -19,20 +19,33 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { 
   Calendar, 
   Plus, 
   Edit, 
   Trash2, 
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  CalendarDays,
+  Filter
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const Agenda = () => {
   const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
     cliente_nome: '',
     servico: '',
@@ -56,6 +69,10 @@ const Agenda = () => {
     fetchAgendamentos();
   }, []);
 
+  useEffect(() => {
+    filtrarAgendamentos();
+  }, [agendamentos, selectedDate]);
+
   const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -76,13 +93,31 @@ const Agenda = () => {
     }
   };
 
+  const filtrarAgendamentos = () => {
+    if (!selectedDate) {
+      setAgendamentosFiltrados(agendamentos);
+      return;
+    }
+
+    const dataFiltro = format(selectedDate, 'yyyy-MM-dd');
+    const agendamentosDoDia = agendamentos.filter(agendamento => 
+      agendamento.data === dataFiltro
+    );
+    setAgendamentosFiltrados(agendamentosDoDia);
+  };
+
+  const limparFiltro = () => {
+    setSelectedDate(null);
+    setCalendarOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       const token = localStorage.getItem('token');
       const url = editingAgendamento 
-        ? `${import.meta.env.VITE_API_BASE_URL}/pi/agendamentos/${editingAgendamento.id}`
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${editingAgendamento.id}`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
       
       const method = editingAgendamento ? 'PUT' : 'POST';
@@ -308,43 +343,116 @@ const Agenda = () => {
         </Dialog>
       </div>
 
+      {/* Filtro de Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-amber-600" />
+            Filtrar por Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 flex-wrap">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-[280px] justify-start text-left font-normal"
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {selectedDate ? (
+                    format(selectedDate, "dd/MM/yyyy")
+                  ) : (
+                    <span>Selecione uma data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    setSelectedDate(date);
+                    setCalendarOpen(false);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            
+            {selectedDate && (
+              <Button
+                variant="outline"
+                onClick={limparFiltro}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Limpar Filtro
+              </Button>
+            )}
+            
+            <div className="text-sm text-gray-600">
+              {selectedDate ? (
+                `Mostrando agendamentos de ${format(selectedDate, "dd/MM/yyyy")} (${agendamentosFiltrados.length})`
+              ) : (
+                `Mostrando todos os agendamentos (${agendamentos.length})`
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-amber-600" />
             Agendamentos
+            {selectedDate && (
+              <span className="text-sm font-normal text-gray-600">
+                - {format(selectedDate, "dd/MM/yyyy")}
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {agendamentos.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">Nenhum agendamento encontrado</p>
+          {agendamentosFiltrados.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">
+              {selectedDate 
+                ? `Nenhum agendamento encontrado para ${format(selectedDate, "dd/MM/yyyy")}`
+                : 'Nenhum agendamento encontrado'
+              }
+            </p>
           ) : (
             <div className="space-y-4">
-              {agendamentos.map((agendamento) => (
-                <div key={agendamento.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                      <span className="text-amber-600 font-semibold">
+              {agendamentosFiltrados.map((agendamento) => (
+                <div key={agendamento.id} className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-6">
+                    <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
+                      <span className="text-amber-600 font-bold text-lg">
                         {agendamento.cliente_nome?.charAt(0) || 'C'}
                       </span>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{agendamento.cliente_nome}</h3>
-                      <p className="text-sm text-gray-600">{agendamento.servico}</p>
-                      <p className="text-sm text-gray-500">
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg text-gray-900">{agendamento.cliente_nome}</h3>
+                      <p className="font-semibold text-base text-gray-700">{agendamento.servico}</p>
+                      <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-medium text-sm shadow-sm">
                         {new Date(agendamento.data + 'T00:00:00').toLocaleDateString('pt-BR')} às {agendamento.hora}
-                      </p>
+                      </div>
+                      {agendamento.observacoes && (
+                        <p className="text-sm text-gray-600 italic mt-1">
+                          Obs: {agendamento.observacoes}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-4">
-                    <div className="text-right">
+                    <div className="text-right space-y-2">
                       <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1`}>
                         {getStatusIcon(agendamento.status)}
                         {agendamento.status}
                       </Badge>
                       {agendamento.preco && (
-                        <p className="text-sm font-medium text-gray-900 mt-1">
+                        <p className="text-lg font-bold text-green-600">
                           R$ {parseFloat(agendamento.preco).toFixed(2)}
                         </p>
                       )}
@@ -355,6 +463,7 @@ const Agenda = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => openEditDialog(agendamento)}
+                        className="hover:bg-amber-50 hover:border-amber-300"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -362,7 +471,7 @@ const Agenda = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDelete(agendamento.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -379,4 +488,3 @@ const Agenda = () => {
 };
 
 export default Agenda;
-
