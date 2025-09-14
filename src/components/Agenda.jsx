@@ -332,7 +332,7 @@ const Agenda = () => {
                       <h3 className="font-medium text-gray-900">{agendamento.cliente_nome}</h3>
                       <p className="text-sm text-gray-600">{agendamento.servico}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(agendamento.data).toLocaleDateString('pt-BR')} às {agendamento.hora}
+                        {new Date(agendamento.data + 'T00:00:00').toLocaleDateString('pt-BR')} às {agendamento.hora}
                       </p>
                     </div>
                   </div>
