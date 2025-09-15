@@ -35,16 +35,6 @@ const Relatorios = () => {
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Lista completa de serviços (pode ser obtida do backend ou de um arquivo de configuração)
-  const todosOsServicos = [
-    'Corte',
-    'Barba',
-    'Corte e Barba',
-    'Sobrancelha',
-    'Corte e Sobrancelha',
-    'Corte, Barba e Sobrancelha'
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -76,14 +66,11 @@ const Relatorios = () => {
 
           // Processar serviços mais vendidos
           const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
-          const servicosCompletos = todosOsServicos.map(servicoNome => {
-            const encontrado = apiServicos.find(s => s.service === servicoNome);
-            return {
-              nome: servicoNome,
-              quantidade: encontrado ? encontrado.qty : 0,
-              receita: encontrado ? encontrado.revenue / 100 : 0
-            };
-          }).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
+          const servicosCompletos = apiServicos.map(s => ({
+            nome: s.service,
+            quantidade: s.qty,
+            receita: s.revenue / 100
+          })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
           setServicosMaisVendidos(servicosCompletos);
 
           if (data.totals) {
