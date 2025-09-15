@@ -21,10 +21,13 @@ const DashboardContent = () => {
     agendamentos: [],
     servicos: []
   });
+  const [agendamentosHoje, setAgendamentosHoje] = useState([]);
+  const [servicosDoDia, setServicosDoDia] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchAgendamentosHoje();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -42,9 +45,63 @@ const DashboardContent = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
+    }
+  };
+
+  const fetchAgendamentosHoje = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        // Filtrar agendamentos de hoje
+        const agendamentosDeHoje = data.filter(agendamento => 
+          agendamento.data === hoje
+        );
+        
+        // Ordenar por horário
+        agendamentosDeHoje.sort((a, b) => a.hora.localeCompare(b.hora));
+        
+        setAgendamentosHoje(agendamentosDeHoje);
+        
+        // Calcular serviços do dia
+        const servicosContagem = {};
+        agendamentosDeHoje.forEach(agendamento => {
+          if (agendamento.servico) {
+            servicosContagem[agendamento.servico] = (servicosContagem[agendamento.servico] || 0) + 1;
+          }
+        });
+        
+        // Converter para array ordenado
+        const servicosArray = Object.entries(servicosContagem)
+          .map(([nome, quantidade]) => ({ nome, quantidade }))
+          .sort((a, b) => b.quantidade - a.quantidade);
+        
+        setServicosDoDia(servicosArray);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar agendamentos de hoje:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatarHorario = (hora) => {
+    // Remove os segundos do horário (ex: "14:30:00" -> "14:30")
+    return hora.substring(0, 5);
+  };
+
+  const formatarData = (data) => {
+    // Converte data para formato brasileiro (ex: "2024-09-14" -> "14/09")
+    const [ano, mes, dia] = data.split('-');
+    return `${dia}/${mes}`;
   };
 
   const getStatusColor = (status) => {
@@ -106,10 +163,10 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.atendimentosHoje}
+              {agendamentosHoje.filter(a => a.status === 'Confirmado').length}
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              clientes atendidos
+              clientes confirmados
             </p>
           </CardContent>
         </Card>
@@ -123,7 +180,10 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              R$ {dashboardData.receitaDia?.toFixed(2) || '0.00'}
+              R$ {agendamentosHoje
+                .filter(a => a.status === 'Confirmado' && a.preco)
+                .reduce((total, a) => total + parseFloat(a.preco || 0), 0)
+                .toFixed(2)}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               faturamento hoje
@@ -140,7 +200,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.proximosAgendamentos}
+              {agendamentosHoje.filter(a => a.status !== 'Cancelado').length}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               para hoje
@@ -151,16 +211,16 @@ const DashboardContent = () => {
         <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
-              Serviços Realizados
+              Serviços do Dia
             </CardTitle>
             <Scissors className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.servicosRealizados}
+              {servicosDoDia.reduce((total, servico) => total + servico.quantidade, 0)}
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              serviços hoje
+              serviços agendados
             </p>
           </CardContent>
         </Card>
@@ -178,29 +238,37 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {dashboardData.agendamentos?.length > 0 ? (
-                dashboardData.agendamentos.map((agendamento) => (
-                  <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <span className="text-yellow-600 font-semibold text-sm">
-                          {agendamento.cliente_nome?.charAt(0) || 'C'}
-                        </span>
+              {agendamentosHoje.length > 0 ? (
+                agendamentosHoje
+                  .filter(agendamento => agendamento.status !== 'Cancelado')
+                  .slice(0, 5) // Mostrar apenas os próximos 5
+                  .map((agendamento) => (
+                    <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <span className="text-yellow-600 font-semibold text-sm">
+                            {agendamento.cliente_nome?.charAt(0) || 'C'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{agendamento.cliente_nome}</p>
+                          <p className="text-sm text-gray-600">{agendamento.servico}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{agendamento.cliente_nome}</p>
-                        <p className="text-sm text-gray-600">{agendamento.servico}</p>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">
+                          {formatarHorario(agendamento.hora)} 
+                          <span className="font-light text-gray-500 ml-1">
+                            ({formatarData(agendamento.data)})
+                          </span>
+                        </p>
+                        <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1 mt-1`}>
+                          {getStatusIcon(agendamento.status)}
+                          {agendamento.status}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">{agendamento.hora}</p>
-                      <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1`}>
-                        {getStatusIcon(agendamento.status)}
-                        {agendamento.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
+                  ))
               ) : (
                 <p className="text-gray-500 text-center py-4">Nenhum agendamento para hoje</p>
               )}
@@ -208,49 +276,29 @@ const DashboardContent = () => {
           </CardContent>
         </Card>
 
-        {/* Serviços Realizados Hoje */}
+        {/* Serviços do Dia */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Scissors className="h-5 w-5 text-purple-600" />
-              Serviços Realizados Hoje
+              Serviços do Dia
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {dashboardData.servicos?.length > 0 ? (
-                dashboardData.servicos.map((servico, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 border-b border-gray-100 last:border-b-0">
-                    <span className="text-gray-700">{servico.nome}</span>
-                    <span className="font-semibold text-gray-900">{servico.quantidade}</span>
+              {servicosDoDia.length > 0 ? (
+                servicosDoDia.map((servico, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700 font-medium">{servico.nome}</span>
+                    <span className="font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full text-sm">
+                      {servico.quantidade}
+                    </span>
                   </div>
                 ))
               ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-2 border-b border-gray-100">
-                    <span className="text-gray-700">Barba</span>
-                    <span className="font-semibold text-gray-900">3</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 border-b border-gray-100">
-                    <span className="text-gray-700">Corte e Barba</span>
-                    <span className="font-semibold text-gray-900">5</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 border-b border-gray-100">
-                    <span className="text-gray-700">Corte</span>
-                    <span className="font-semibold text-gray-900">2</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 border-b border-gray-100">
-                    <span className="text-gray-700">Sobrancelha</span>
-                    <span className="font-semibold text-gray-900">1</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 border-b border-gray-100">
-                    <span className="text-gray-700">Corte e Sobrancelha</span>
-                    <span className="font-semibold text-gray-900">1</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2">
-                    <span className="text-gray-700">Corte, Barba e Sobrancelha</span>
-                    <span className="font-semibold text-gray-900">0</span>
-                  </div>
+                <div className="text-center py-8">
+                  <Scissors className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Nenhum serviço agendado para hoje</p>
                 </div>
               )}
             </div>
