@@ -25,42 +25,47 @@ import {
   Download,
   Calendar
 } from "lucide-react";
+import { format, subDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const Relatorios = () => {
   const [periodo, setPeriodo] = useState("mes");
-  const [servicosMaisVendidos, setServicosMaisVendidos] = useState([
-    { nome: "Corte e Barba", quantidade: 45, receita: 2025 },
-    { nome: "Corte", quantidade: 32, receita: 960 },
-    { nome: "Barba", quantidade: 28, receita: 560 },
-    { nome: "Corte, Barba e Sobrancelha", quantidade: 15, receita: 975 },
-    { nome: "Sobrancelha", quantidade: 12, receita: 180 },
-    { nome: "Corte e Sobrancelha", quantidade: 8, receita: 320 }
-  ]);
+  const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
+  const [receitaTempos, setReceitaTempos] = useState([]);
+  const [frequenciaClientes, setFrequenciaClientes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [receitaTempos, setReceitaTempos] = useState([
-    { periodo: "Dom", valor: 380 },
-    { periodo: "Seg", valor: 520 },
-    { periodo: "Ter", valor: 680 },
-    { periodo: "Qua", valor: 590 },
-    { periodo: "Qui", valor: 720 },
-    { periodo: "Sex", valor: 850 },
-    { periodo: "Sáb", valor: 920 }
-  ]);
+  // Lista completa de serviços (pode ser obtida do backend ou de um arquivo de configuração)
+  const todosOsServicos = [
+    'Corte',
+    'Barba',
+    'Corte e Barba',
+    'Sobrancelha',
+    'Corte e Sobrancelha',
+    'Corte, Barba e Sobrancelha'
+  ];
 
-  const [frequenciaClientes, setFrequenciaClientes] = useState([
-    { nome: "João Silva", visitas: 12, ultimaVisita: "2024-08-20", gasto: 540 },
-    { nome: "Pedro Santos", visitas: 8, ultimaVisita: "2024-08-18", gasto: 360 },
-    { nome: "Carlos Lima", visitas: 6, ultimaVisita: "2024-08-15", gasto: 270 },
-    { nome: "Marcus Oliveira", visitas: 5, ultimaVisita: "2024-08-22", gasto: 325 },
-    { nome: "Rafael Costa", visitas: 4, ultimaVisita: "2024-08-19", gasto: 180 }
-  ]);
-
-  // 🔥 Buscar dados reais da API (mantém mocks como fallback)
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo?periodo=${periodo}`, {
+        let apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo`;
+        let params = `?periodo=${periodo}`;
+
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+
+        if (periodo === 'hoje') {
+          params = `?data_inicio=${today}&data_fim=${today}`;
+        } else if (periodo === 'ontem') {
+          params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
+        } else {
+          // Para outros períodos, a API já deve lidar com 'semana', 'mes', etc.
+          // Se a API não suportar diretamente, seria necessário calcular as datas de início/fim aqui
+        }
+
+        const response = await fetch(apiUrl + params, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },
@@ -69,21 +74,23 @@ const Relatorios = () => {
         if (response.ok) {
           const data = await response.json();
 
-          if (Array.isArray(data.by_service)) {
-            setServicosMaisVendidos(
-              data.by_service.map(s => ({
-                nome: s.service,
-                quantidade: s.qty,
-                receita: s.revenue / 100
-              }))
-            );
-          }
+          // Processar serviços mais vendidos
+          const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
+          const servicosCompletos = todosOsServicos.map(servicoNome => {
+            const encontrado = apiServicos.find(s => s.service === servicoNome);
+            return {
+              nome: servicoNome,
+              quantidade: encontrado ? encontrado.qty : 0,
+              receita: encontrado ? encontrado.revenue / 100 : 0
+            };
+          }).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
+          setServicosMaisVendidos(servicosCompletos);
 
           if (data.totals) {
             setReceitaTempos([
-              { periodo: "Hoje", valor: data.totals.daily },
-              { periodo: "Semana", valor: data.totals.weekly },
-              { periodo: "Mês", valor: data.totals.monthly }
+              { periodo: "Hoje", valor: data.totals.daily || 0 },
+              { periodo: "Semana", valor: data.totals.weekly || 0 },
+              { periodo: "Mês", valor: data.totals.monthly || 0 }
             ]);
           }
 
@@ -100,13 +107,14 @@ const Relatorios = () => {
         }
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
   }, [periodo]);
 
-  // 🎨 Paleta preto + amarelo com mais contraste
   const CORES_GRAFICO = [
     "#FFD700", // amarelo mais vibrante
     "#1A1A1A", // preto mais escuro
@@ -120,7 +128,6 @@ const Relatorios = () => {
     window.print();
   };
 
-  // Tooltip customizado para o gráfico de pizza (sem porcentagem)
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
@@ -136,7 +143,6 @@ const Relatorios = () => {
     return null;
   };
 
-  // Renderizar legenda customizada
   const renderLegend = (props) => {
     const { payload } = props;
     return (
@@ -157,6 +163,17 @@ const Relatorios = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -191,6 +208,8 @@ const Relatorios = () => {
                 <SelectValue placeholder="Selecione o período" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="hoje">Hoje</SelectItem>
+                <SelectItem value="ontem">Ontem</SelectItem>
                 <SelectItem value="semana">Última Semana</SelectItem>
                 <SelectItem value="mes">Último Mês</SelectItem>
                 <SelectItem value="trimestre">Último Trimestre</SelectItem>
@@ -243,13 +262,13 @@ const Relatorios = () => {
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={servicosMaisVendidos}
+                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)} // Apenas serviços com quantidade > 0 no gráfico de pizza
                       cx="50%"
                       cy="40%"
                       outerRadius={80}
                       dataKey="quantidade"
                     >
-                      {servicosMaisVendidos.map((entry, index) => (
+                      {servicosMaisVendidos.filter(s => s.quantidade > 0).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={CORES_GRAFICO[index % CORES_GRAFICO.length]} />
                       ))}
                     </Pie>
