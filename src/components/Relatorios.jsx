@@ -32,6 +32,8 @@ const Relatorios = () => {
   const [periodo, setPeriodo] = useState("mes");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
+  const [receitaPorHora, setReceitaPorHora] = useState([]);
+  const [receitaPorDiaSemana, setReceitaPorDiaSemana] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,12 +75,40 @@ const Relatorios = () => {
           })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
           setServicosMaisVendidos(servicosCompletos);
 
+          // Processar dados de receita por tempo (estático para comparação)
           if (data.totals) {
             setReceitaTempos([
               { periodo: "Hoje", valor: data.totals.daily || 0 },
               { periodo: "Semana", valor: data.totals.weekly || 0 },
               { periodo: "Mês", valor: data.totals.monthly || 0 }
             ]);
+          }
+
+          // Processar receita por hora (dados dinâmicos)
+          if (Array.isArray(data.revenue_by_hour_today)) {
+            const horasCompletas = [];
+            for (let i = 8; i <= 18; i++) {
+              const horaStr = `${i.toString().padStart(2, '0')}:00`;
+              const dadosHora = data.revenue_by_hour_today.find(h => h.hour === horaStr);
+              horasCompletas.push({
+                hora: horaStr,
+                receita: dadosHora ? dadosHora.revenue / 100 : 0
+              });
+            }
+            setReceitaPorHora(horasCompletas);
+          }
+
+          // Processar receita por dia da semana (dados dinâmicos)
+          if (Array.isArray(data.revenue_by_day_of_week)) {
+            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const diasCompletos = diasSemana.map(dia => {
+              const dadosDia = data.revenue_by_day_of_week.find(d => d.day_of_week === dia);
+              return {
+                dia: dia,
+                receita: dadosDia ? dadosDia.revenue / 100 : 0
+              };
+            });
+            setReceitaPorDiaSemana(diasCompletos);
           }
 
           if (Array.isArray(data.top_clients)) {
@@ -123,6 +153,21 @@ const Relatorios = () => {
           <p className="font-medium text-gray-900">{data.payload.nome}</p>
           <p className="text-sm text-gray-600">
             Quantidade: {data.value}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomTooltipReceita = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{label}</p>
+          <p className="text-sm text-gray-600">
+            Receita: R$ {data.value.toFixed(2)}
           </p>
         </div>
       );
@@ -301,11 +346,12 @@ const Relatorios = () => {
 
         {/* --- RECEITA --- */}
         <TabsContent value="receita" className="space-y-6">
+          {/* Gráfico de Receita Geral (Comparativo) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita
+                Receita Comparativa
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -317,6 +363,48 @@ const Relatorios = () => {
                   <Tooltip formatter={(value) => [`R$ ${value}`, "Receita"]} />
                   <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ fill: "#000", r: 6 }} />
                 </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Gráfico de Receita por Horário (Hoje) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <TrendingUp className="h-5 w-5 text-amber-600" />
+                Receita por Horário (Hoje)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={receitaPorHora}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="hora" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip content={<CustomTooltipReceita />} />
+                  <Bar dataKey="receita" fill="#FFC107" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Gráfico de Receita por Dia da Semana */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <TrendingUp className="h-5 w-5 text-amber-600" />
+                Receita por Dia da Semana
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={receitaPorDiaSemana}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="dia" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip content={<CustomTooltipReceita />} />
+                  <Bar dataKey="receita" fill="#FFC107" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
