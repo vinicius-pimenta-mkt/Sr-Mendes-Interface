@@ -51,8 +51,8 @@ const Relatorios = () => {
         } else if (periodo === 'ontem') {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         } else {
-          // Para outros períodos, a API já deve lidar com 'semana', 'mes', etc.
-          // Se a API não suportar diretamente, seria necessário calcular as datas de início/fim aqui
+          // Para outros períodos, enviar o parâmetro período
+          params = `?periodo=${periodo}`;
         }
 
         const response = await fetch(apiUrl + params, {
@@ -64,7 +64,7 @@ const Relatorios = () => {
         if (response.ok) {
           const data = await response.json();
 
-          // Processar serviços mais vendidos
+          // Processar serviços mais vendidos - agora incluindo todos os serviços
           const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
           const servicosCompletos = apiServicos.map(s => ({
             nome: s.service,
@@ -73,7 +73,11 @@ const Relatorios = () => {
           })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
           setServicosMaisVendidos(servicosCompletos);
 
-          if (data.totals) {
+          // Processar dados de receita detalhada
+          if (data.receita_detalhada && Array.isArray(data.receita_detalhada)) {
+            setReceitaTempos(data.receita_detalhada);
+          } else if (data.totals) {
+            // Fallback para a estrutura antiga
             setReceitaTempos([
               { periodo: "Hoje", valor: data.totals.daily || 0 },
               { periodo: "Semana", valor: data.totals.weekly || 0 },
@@ -198,6 +202,7 @@ const Relatorios = () => {
                 <SelectItem value="hoje">Hoje</SelectItem>
                 <SelectItem value="ontem">Ontem</SelectItem>
                 <SelectItem value="semana">Última Semana</SelectItem>
+                <SelectItem value="ultimos15dias">Últimos 15 Dias</SelectItem>
                 <SelectItem value="mes">Último Mês</SelectItem>
                 <SelectItem value="trimestre">Último Trimestre</SelectItem>
                 <SelectItem value="semestre">Último Semestre</SelectItem>
@@ -362,3 +367,4 @@ const Relatorios = () => {
 };
 
 export default Relatorios;
+
