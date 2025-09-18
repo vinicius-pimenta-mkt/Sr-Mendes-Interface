@@ -58,6 +58,8 @@ const Relatorios = () => {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         }
 
+        console.log('Fazendo requisição para:', apiUrl + params);
+
         const response = await fetch(apiUrl + params, {
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -66,26 +68,27 @@ const Relatorios = () => {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Dados recebidos do backend:', data);
 
-          // Processar serviços mais vendidos
+          // Processar serviços mais vendidos - SEM divisão por 100 se já estiver correto
           const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
           const servicosCompletos = apiServicos.map(s => ({
             nome: s.service,
             quantidade: s.qty,
-            receita: s.revenue / 100
+            receita: s.revenue // Testar sem divisão primeiro
           })).sort((a, b) => b.quantidade - a.quantidade);
           setServicosMaisVendidos(servicosCompletos);
 
-          // Processar dados de receita por tempo (estático para comparação)
+          // Processar dados de receita por tempo - SEM divisão por 100 se já estiver correto
           if (data.totals) {
             setReceitaTempos([
-              { periodo: "Hoje", valor: data.totals.daily / 100 || 0 },
-              { periodo: "Semana", valor: data.totals.weekly / 100 || 0 },
-              { periodo: "Mês", valor: data.totals.monthly / 100 || 0 }
+              { periodo: "Hoje", valor: data.totals.daily || 0 },
+              { periodo: "Semana", valor: data.totals.weekly || 0 },
+              { periodo: "Mês", valor: data.totals.monthly || 0 }
             ]);
           }
 
-          // Processar receita por hora (dados dinâmicos baseados no período)
+          // Processar receita por hora - SEM divisão por 100 se já estiver correto
           if (Array.isArray(data.revenue_by_hour)) {
             const horasCompletas = [];
             for (let i = 8; i <= 18; i++) {
@@ -93,30 +96,30 @@ const Relatorios = () => {
               const dadosHora = data.revenue_by_hour.find(h => h.hour === horaStr);
               horasCompletas.push({
                 hora: horaStr,
-                receita: dadosHora ? dadosHora.revenue / 100 : 0
+                receita: dadosHora ? dadosHora.revenue : 0
               });
             }
             setReceitaPorHora(horasCompletas);
           }
 
-          // Processar receita por dia da semana (dados dinâmicos)
+          // Processar receita por dia da semana - SEM divisão por 100 se já estiver correto
           if (Array.isArray(data.revenue_by_day_of_week)) {
             const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
             const diasCompletos = diasSemana.map(dia => {
               const dadosDia = data.revenue_by_day_of_week.find(d => d.day_of_week === dia);
               return {
                 dia: dia,
-                receita: dadosDia ? dadosDia.revenue / 100 : 0
+                receita: dadosDia ? dadosDia.revenue : 0
               };
             });
             setReceitaPorDiaSemana(diasCompletos);
           }
 
-          // Processar receita por semana (dados dinâmicos)
+          // Processar receita por semana - SEM divisão por 100 se já estiver correto
           if (Array.isArray(data.revenue_by_week)) {
             setReceitaPorSemana(data.revenue_by_week.map(s => ({
               semana: s.week_number,
-              receita: s.revenue / 100
+              receita: s.revenue
             })));
           }
 
@@ -126,10 +129,12 @@ const Relatorios = () => {
                 nome: c.name,
                 visitas: c.visits,
                 ultimaVisita: c.last_visit,
-                gasto: c.spent / 100
+                gasto: c.spent
               }))
             );
           }
+        } else {
+          console.error('Erro na resposta da API:', response.status, response.statusText);
         }
 
         // Buscar dados específicos baseados no período selecionado
@@ -147,8 +152,11 @@ const Relatorios = () => {
 
   const fetchSpecificData = async (token, periodoSelecionado) => {
     try {
+      console.log('Buscando dados específicos para período:', periodoSelecionado);
+
       // Buscar receita por hora do dia (apenas para hoje)
       if (periodoSelecionado === 'hoje') {
+        console.log('Buscando receita por hora...');
         const receitaHoraResponse = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/receita-por-hora`,
           {
@@ -157,12 +165,16 @@ const Relatorios = () => {
         );
         if (receitaHoraResponse.ok) {
           const horaData = await receitaHoraResponse.json();
+          console.log('Dados de receita por hora:', horaData);
           setReceitaPorHora(horaData);
+        } else {
+          console.error('Erro ao buscar receita por hora:', receitaHoraResponse.status);
         }
       }
 
       // Buscar receita por dia da semana
       if (periodoSelecionado === 'semana') {
+        console.log('Buscando receita por dia da semana...');
         const receitaDiaResponse = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/receita-por-dia-semana?periodo=semana`,
           {
@@ -171,12 +183,16 @@ const Relatorios = () => {
         );
         if (receitaDiaResponse.ok) {
           const diaData = await receitaDiaResponse.json();
+          console.log('Dados de receita por dia da semana:', diaData);
           setReceitaPorDiaSemana(diaData);
+        } else {
+          console.error('Erro ao buscar receita por dia da semana:', receitaDiaResponse.status);
         }
       }
 
       // Buscar receita por semana do mês
       if (periodoSelecionado === 'mes') {
+        console.log('Buscando receita por semana do mês...');
         const receitaSemanaResponse = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/receita-por-semana`,
           {
@@ -185,12 +201,16 @@ const Relatorios = () => {
         );
         if (receitaSemanaResponse.ok) {
           const semanaData = await receitaSemanaResponse.json();
+          console.log('Dados de receita por semana:', semanaData);
           setReceitaPorSemana(semanaData);
+        } else {
+          console.error('Erro ao buscar receita por semana:', receitaSemanaResponse.status);
         }
       }
 
       // Buscar receita dos últimos 15 dias
       if (periodoSelecionado === 'ultimos_15_dias') {
+        console.log('Buscando receita dos últimos 15 dias...');
         const receita15DiasResponse = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/receita-ultimos-15-dias`,
           {
@@ -199,7 +219,10 @@ const Relatorios = () => {
         );
         if (receita15DiasResponse.ok) {
           const dias15Data = await receita15DiasResponse.json();
+          console.log('Dados de receita dos últimos 15 dias:', dias15Data);
           setReceitaUltimos15Dias(dias15Data);
+        } else {
+          console.error('Erro ao buscar receita dos últimos 15 dias:', receita15DiasResponse.status);
         }
       }
     } catch (error) {
@@ -444,6 +467,19 @@ const Relatorios = () => {
                 <SelectItem value="ano">Último Ano</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Debug Info */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-sm text-gray-600">
+            <p><strong>Período Atual:</strong> {periodo}</p>
+            <p><strong>Serviços Carregados:</strong> {servicosMaisVendidos.length}</p>
+            <p><strong>Receita por Hora:</strong> {receitaPorHora.length} itens</p>
+            <p><strong>Receita por Dia:</strong> {receitaPorDiaSemana.length} itens</p>
+            <p><strong>Últimos 15 Dias:</strong> {receitaUltimos15Dias.length} itens</p>
           </div>
         </CardContent>
       </Card>
