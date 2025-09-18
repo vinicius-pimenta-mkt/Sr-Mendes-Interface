@@ -34,6 +34,8 @@ const Relatorios = () => {
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [receitaPorHora, setReceitaPorHora] = useState([]);
   const [receitaPorDiaSemana, setReceitaPorDiaSemana] = useState([]);
+  const [receitaPorSemana, setReceitaPorSemana] = useState([]);
+  const [receitaUltimos15Dias, setReceitaUltimos15Dias] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,8 +55,8 @@ const Relatorios = () => {
         } else if (periodo === 'ontem') {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         } else {
-          // Para outros períodos, a API já deve lidar com 'semana', 'mes', etc.
-          // Se a API não suportar diretamente, seria necessário calcular as datas de início/fim aqui
+          // Para outros períodos, usar o parâmetro periodo
+          params = `?periodo=${periodo}`;
         }
 
         const response = await fetch(apiUrl + params, {
@@ -72,45 +74,53 @@ const Relatorios = () => {
             nome: s.service,
             quantidade: s.qty,
             receita: s.revenue / 100
-          })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
+          })).sort((a, b) => b.quantidade - a.quantidade);
           setServicosMaisVendidos(servicosCompletos);
 
-          // Processar dados de receita por tempo (estático para comparação)
+          // Processar dados de receita por tempo (agora dinâmicos)
           if (data.totals) {
             setReceitaTempos([
-              { periodo: "Hoje", valor: data.totals.daily || 0 },
-              { periodo: "Semana", valor: data.totals.weekly || 0 },
-              { periodo: "Mês", valor: data.totals.monthly || 0 }
+              { periodo: "Hoje", valor: (data.totals.daily || 0) / 100 },
+              { periodo: "Semana", valor: (data.totals.weekly || 0) / 100 },
+              { periodo: "Mês", valor: (data.totals.monthly || 0) / 100 }
             ]);
           }
 
-          // Processar receita por hora (dados dinâmicos)
-          if (Array.isArray(data.revenue_by_hour_today)) {
-            const horasCompletas = [];
-            for (let i = 8; i <= 18; i++) {
-              const horaStr = `${i.toString().padStart(2, '0')}:00`;
-              const dadosHora = data.revenue_by_hour_today.find(h => h.hour === horaStr);
-              horasCompletas.push({
-                hora: horaStr,
-                receita: dadosHora ? dadosHora.revenue / 100 : 0
-              });
-            }
-            setReceitaPorHora(horasCompletas);
-          }
-
-          // Processar receita por dia da semana (dados dinâmicos)
-          if (Array.isArray(data.revenue_by_day_of_week)) {
-            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            const diasCompletos = diasSemana.map(dia => {
-              const dadosDia = data.revenue_by_day_of_week.find(d => d.day_of_week === dia);
-              return {
-                dia: dia,
-                receita: dadosDia ? dadosDia.revenue / 100 : 0
-              };
+          // Processar receita por hora (dados dinâmicos) - sempre das 8h às 18h
+          const horasCompletas = [];
+          for (let i = 8; i <= 18; i++) {
+            const horaStr = `${i.toString().padStart(2, '0')}:00`;
+            const dadosHora = Array.isArray(data.revenue_by_hour_today) ? 
+              data.revenue_by_hour_today.find(h => h.hour === horaStr) : null;
+            horasCompletas.push({
+              hora: horaStr,
+              receita: dadosHora ? dadosHora.revenue / 100 : 0
             });
-            setReceitaPorDiaSemana(diasCompletos);
+          }
+          setReceitaPorHora(horasCompletas);
+
+          // Processar receita por dia da semana (dados dinâmicos) - segunda a sábado
+          const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+          const diasCompletos = diasSemana.map(dia => {
+            const dadosDia = Array.isArray(data.revenue_by_day_of_week) ? 
+              data.revenue_by_day_of_week.find(d => d.day_of_week === dia) : null;
+            return {
+              dia: dia,
+              receita: dadosDia ? dadosDia.revenue / 100 : 0
+            };
+          });
+          setReceitaPorDiaSemana(diasCompletos);
+
+          // Processar receita por semana (últimas 4 semanas)
+          if (Array.isArray(data.revenue_by_week)) {
+            const semanasCompletas = data.revenue_by_week.map(s => ({
+              semana: s.week_label || 'Semana',
+              receita: s.revenue / 100
+            }));
+            setReceitaPorSemana(semanasCompletas);
           }
 
+          // Processar clientes
           if (Array.isArray(data.top_clients)) {
             setFrequenciaClientes(
               data.top_clients.map(c => ({
@@ -122,6 +132,33 @@ const Relatorios = () => {
             );
           }
         }
+
+        // Buscar dados específicos para período de últimos 15 dias
+        if (periodo === 'ultimos_15_dias') {
+          console.log('Buscando dados específicos para período:', periodo);
+          console.log('Buscando receita dos últimos 15 dias...');
+          
+          const response15Dias = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/receita-ultimos-15-dias`, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+
+          if (response15Dias.ok) {
+            const data15Dias = await response15Dias.json();
+            if (Array.isArray(data15Dias.receita_por_dia)) {
+              const dadosFormatados = data15Dias.receita_por_dia.map(d => ({
+                data: d.data,
+                dia: d.dia_semana,
+                receita: d.receita / 100
+              }));
+              setReceitaUltimos15Dias(dadosFormatados);
+            }
+          } else {
+            console.error('Erro ao buscar receita dos últimos 15 dias:', response15Dias.status);
+          }
+        }
+
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
       } finally {
@@ -243,6 +280,7 @@ const Relatorios = () => {
                 <SelectItem value="hoje">Hoje</SelectItem>
                 <SelectItem value="ontem">Ontem</SelectItem>
                 <SelectItem value="semana">Última Semana</SelectItem>
+                <SelectItem value="ultimos_15_dias">Últimos 15 Dias</SelectItem>
                 <SelectItem value="mes">Último Mês</SelectItem>
                 <SelectItem value="trimestre">Último Trimestre</SelectItem>
                 <SelectItem value="semestre">Último Semestre</SelectItem>
@@ -294,7 +332,7 @@ const Relatorios = () => {
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)} // Apenas serviços com quantidade > 0 no gráfico de pizza
+                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)}
                       cx="50%"
                       cy="40%"
                       outerRadius={80}
@@ -360,7 +398,7 @@ const Relatorios = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="periodo" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(value) => [`R$ ${value}`, "Receita"]} />
+                  <Tooltip formatter={(value) => [`R$ ${value.toFixed(2)}`, "Receita"]} />
                   <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ fill: "#000", r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -372,7 +410,7 @@ const Relatorios = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita por Horário (Hoje)
+                Receita por Horário (Hoje - 8h às 18h)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -393,7 +431,7 @@ const Relatorios = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita por Dia da Semana
+                Receita por Dia da Semana (Segunda a Sábado)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -408,6 +446,68 @@ const Relatorios = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
+          {/* Gráfico de Receita por Semana (Últimas 4 semanas) */}
+          {receitaPorSemana.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <TrendingUp className="h-5 w-5 text-amber-600" />
+                  Receita por Semana (Últimas 4 Semanas)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={receitaPorSemana}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="semana" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip content={<CustomTooltipReceita />} />
+                    <Bar dataKey="receita" fill="#FFC107" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Gráfico de Receita dos Últimos 15 Dias */}
+          {periodo === 'ultimos_15_dias' && receitaUltimos15Dias.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <TrendingUp className="h-5 w-5 text-amber-600" />
+                  Receita dos Últimos 15 Dias
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={receitaUltimos15Dias}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="data" 
+                      tick={{ fontSize: 8 }} 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={80}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getDate()}/${date.getMonth() + 1}`;
+                      }}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip 
+                      formatter={(value) => [`R$ ${value.toFixed(2)}`, "Receita"]}
+                      labelFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+                      }}
+                    />
+                    <Line type="monotone" dataKey="receita" stroke="#FFC107" strokeWidth={2} dot={{ fill: "#000", r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* --- CLIENTES --- */}
@@ -450,3 +550,4 @@ const Relatorios = () => {
 };
 
 export default Relatorios;
+
