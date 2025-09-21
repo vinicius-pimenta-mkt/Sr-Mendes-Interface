@@ -77,11 +77,8 @@ const Agenda = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         setAgendamentos(data);
@@ -98,12 +95,10 @@ const Agenda = () => {
       setAgendamentosFiltrados(agendamentos);
       return;
     }
-
     const dataFiltro = format(selectedDate, 'yyyy-MM-dd');
-    const agendamentosDoDia = agendamentos.filter(agendamento => 
-      agendamento.data === dataFiltro
+    setAgendamentosFiltrados(
+      agendamentos.filter(a => a.data === dataFiltro)
     );
-    setAgendamentosFiltrados(agendamentosDoDia);
   };
 
   const limparFiltro = () => {
@@ -113,22 +108,20 @@ const Agenda = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
       const token = localStorage.getItem('token');
-      const url = editingAgendamento 
+      const url = editingAgendamento
         ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${editingAgendamento.id}`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
-      
-      const method = editingAgendamento ? 'PUT' : 'POST';
-      
-      // Converter o preço de reais para centavos antes de enviar
-      const precoEmCentavos = formData.preco ? Math.round(parseFloat(formData.preco) * 100) : null;
 
-      const payload = {
-        ...formData,
-        preco: precoEmCentavos // Envia o preço em centavos
-      };
+      const method = editingAgendamento ? 'PUT' : 'POST';
+
+      // envia em centavos
+      const precoEmCentavos = formData.preco
+        ? Math.round(parseFloat(formData.preco) * 100)
+        : null;
+
+      const payload = { ...formData, preco: precoEmCentavos };
 
       const response = await fetch(url, {
         method,
@@ -151,19 +144,13 @@ const Agenda = () => {
 
   const handleDelete = async (id) => {
     if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
-    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        fetchAgendamentos();
-      }
+      if (response.ok) fetchAgendamentos();
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
     }
@@ -182,99 +169,55 @@ const Agenda = () => {
     setEditingAgendamento(null);
   };
 
-const openEditDialog = (agendamento) => {
-  setEditingAgendamento(agendamento);
-
-const formatPreco = (precoRaw) => {
-  if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '';
-
-  if (typeof precoRaw === 'string') {
-    const s = precoRaw.trim();
-
-    if (/R\$/.test(s) || /,/.test(s)) {
-      const n = parseFloat(s.replace(/R\$|\s/g, '').replace(/\./g, '').replace(',', '.'));
-      if (!isNaN(n)) return n.toFixed(2);
-      
-    const asNum = parseFloat(s);
-    if (!isNaN(asNum)) {
-      if (asNum >= 1000) return (asNum / 100).toFixed(2);
-      // senão, assume que já está em reais
-      return asNum.toFixed(2);
+  // ---- FORMATAÇÃO DE PREÇO ----
+  const formatPreco = (precoRaw) => {
+    if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '';
+    if (typeof precoRaw === 'string') {
+      const s = precoRaw.trim();
+      if (/R\$/.test(s) || /,/.test(s)) {
+        const n = parseFloat(s.replace(/R\$|\s/g, '').replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(n)) return n.toFixed(2);
+      }
+      const asNum = parseFloat(s);
+      if (!isNaN(asNum)) return asNum >= 1000 ? (asNum / 100).toFixed(2) : asNum.toFixed(2);
+      return '';
     }
-
-    return '';
-  }
-
-  if (typeof precoRaw === 'number') {
-    if (precoRaw >= 1000) return (precoRaw / 100).toFixed(2);
-    return precoRaw.toFixed(2);
-  }
-
-  return '';
-};
-
-const formatPreco = (precoRaw) => {
-  if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '';
-
-  if (typeof precoRaw === 'string') {
-    const s = precoRaw.trim();
-    if (/R\$/.test(s) || /,/.test(s)) {
-      const n = parseFloat(s.replace(/R\$|\s/g, '').replace(/\./g, '').replace(',', '.'));
-      if (!isNaN(n)) return n.toFixed(2);
-    }
-    const asNum = parseFloat(s);
-    if (!isNaN(asNum)) {
-      return asNum >= 1000 ? (asNum / 100).toFixed(2) : asNum.toFixed(2);
+    if (typeof precoRaw === 'number') {
+      return precoRaw >= 1000 ? (precoRaw / 100).toFixed(2) : precoRaw.toFixed(2);
     }
     return '';
-  }
+  };
 
-  if (typeof precoRaw === 'number') {
-    return precoRaw >= 1000 ? (precoRaw / 100).toFixed(2) : precoRaw.toFixed(2);
-  }
-  return '';
-};
+  const openEditDialog = (agendamento) => {
+    setEditingAgendamento(agendamento);
+    const precoFormatado = formatPreco(agendamento?.preco);
+    setFormData({
+      cliente_nome: agendamento?.cliente_nome ?? '',
+      servico: agendamento?.servico ?? '',
+      data: agendamento?.data ?? '',
+      hora: agendamento?.hora ?? '',
+      status: agendamento?.status ?? 'Pendente',
+      preco: precoFormatado ? precoFormatado : '',
+      observacoes: agendamento?.observacoes ?? ''
+    });
+    setDialogOpen(true);
+  };
 
-const openEditDialog = (agendamento) => {
-  setEditingAgendamento(agendamento);
-  const precoFormatado = formatPreco(agendamento?.preco);
-
-  setFormData({
-    cliente_nome: agendamento?.cliente_nome ?? '',
-    servico: agendamento?.servico ?? '',
-    data: agendamento?.data ?? '',
-    hora: agendamento?.hora ?? '',
-    status: agendamento?.status ?? 'Pendente',
-    preco: precoFormatado ? `R$ ${precoFormatado}` : '',
-    observacoes: agendamento?.observacoes ?? ''
-  });
-
-  setDialogOpen(true);
-};
-  
   const getStatusColor = (status) => {
     switch (status) {
-      case "Confirmado":
-        return "bg-green-100 text-green-800";
-      case "Pendente":
-        return "bg-yellow-100 text-yellow-800";
-      case "Cancelado":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case 'Confirmado': return 'bg-green-100 text-green-800';
+      case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
+      case 'Cancelado':  return 'bg-red-100 text-red-800';
+      default:           return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "Confirmado":
-        return <CheckCircle className="h-4 w-4" />;
-      case "Pendente":
-        return <Clock className="h-4 w-4" />;
-      case "Cancelado":
-        return <AlertCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
+      case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
+      case 'Pendente':   return <Clock className="h-4 w-4" />;
+      case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
+      default:           return <Clock className="h-4 w-4" />;
     }
   };
 
@@ -293,7 +236,7 @@ const openEditDialog = (agendamento) => {
           <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
           <p className="text-gray-600">Gerencie os agendamentos da barbearia</p>
         </div>
-        
+
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm} className="bg-amber-600 hover:bg-amber-700">
@@ -317,7 +260,7 @@ const openEditDialog = (agendamento) => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="servico">Serviço</Label>
                 <Select value={formData.servico} onValueChange={(value) => setFormData({...formData, servico: value})}>
@@ -333,7 +276,7 @@ const openEditDialog = (agendamento) => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="data">Data</Label>
@@ -345,7 +288,7 @@ const openEditDialog = (agendamento) => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="hora">Hora</Label>
                   <Input
@@ -357,7 +300,7 @@ const openEditDialog = (agendamento) => {
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
@@ -372,7 +315,7 @@ const openEditDialog = (agendamento) => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="preco">Preço (R$)</Label>
                   <Input
@@ -384,7 +327,7 @@ const openEditDialog = (agendamento) => {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="observacoes">Observações</Label>
                 <Input
@@ -393,7 +336,7 @@ const openEditDialog = (agendamento) => {
                   onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
                 />
               </div>
-              
+
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
@@ -443,7 +386,7 @@ const openEditDialog = (agendamento) => {
                 />
               </PopoverContent>
             </Popover>
-            
+
             {selectedDate && (
               <Button
                 variant="outline"
@@ -453,7 +396,7 @@ const openEditDialog = (agendamento) => {
                 Limpar Filtro
               </Button>
             )}
-            
+
             <div className="text-sm text-gray-600">
               {selectedDate ? (
                 `Mostrando agendamentos de ${format(selectedDate, "dd/MM/yyyy")} (${agendamentosFiltrados.length})`
@@ -488,7 +431,10 @@ const openEditDialog = (agendamento) => {
           ) : (
             <div className="space-y-4">
               {agendamentosFiltrados.map((agendamento) => (
-                <div key={agendamento.id} className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div
+                  key={agendamento.id}
+                  className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center space-x-6">
                     <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
                       <span className="text-amber-600 font-bold text-lg">
@@ -508,7 +454,7 @@ const openEditDialog = (agendamento) => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="text-right space-y-2">
                       <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1`}>
@@ -517,11 +463,11 @@ const openEditDialog = (agendamento) => {
                       </Badge>
                       {agendamento.preco !== undefined && agendamento.preco !== null && (
                         <p className="text-lg font-bold text-green-600">
-                          R$ { (typeof agendamento.preco === 'string' ? parseFloat(agendamento.preco.replace('R$', '').replace(',', '.')) : agendamento.preco / 100).toFixed(2) }
+                          R$ {formatPreco(agendamento.preco)}
                         </p>
                       )}
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
