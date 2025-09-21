@@ -4,31 +4,31 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { 
-  Calendar, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Calendar,
+  Plus,
+  Edit,
+  Trash2,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -122,13 +122,21 @@ const Agenda = () => {
       
       const method = editingAgendamento ? 'PUT' : 'POST';
       
+      // Converter o preço de reais para centavos antes de enviar
+      const precoEmCentavos = formData.preco ? Math.round(parseFloat(formData.preco) * 100) : null;
+
+      const payload = {
+        ...formData,
+        preco: precoEmCentavos // Envia o preço em centavos
+      };
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -176,38 +184,55 @@ const Agenda = () => {
 
   const openEditDialog = (agendamento) => {
     setEditingAgendamento(agendamento);
+    
+    // Converte o preço recebido do backend para um número em reais com ponto decimal
+    let precoFormatado = '';
+    if (agendamento.preco !== undefined && agendamento.preco !== null) {
+      if (typeof agendamento.preco === 'string') {
+        // Se for string 
+
+
+{
+        // Se for string "R$XX,XX", remove "R$" e substitui vírgula por ponto
+        precoFormatado = parseFloat(agendamento.preco.replace("R$", "").replace(",", "."));
+      } else {
+        // Se for número, assume que está em centavos e divide por 100
+        precoFormatado = agendamento.preco / 100;
+      }
+    }
+
     setFormData({
       cliente_nome: agendamento.cliente_nome,
       servico: agendamento.servico,
       data: agendamento.data,
       hora: agendamento.hora,
       status: agendamento.status,
-      preco: agendamento.preco || '',
-      observacoes: agendamento.observacoes || ''
+      preco: precoFormatado, // Use o valor formatado aqui
+      observacoes: agendamento.observacoes || ""
     });
     setDialogOpen(true);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Confirmado':
-        return 'bg-green-100 text-green-800';
-      case 'Pendente':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelado':
-        return 'bg-red-100 text-red-800';
+      case "Confirmado":
+        return "bg-green-100 text-green-800";
+      case "Pendente":
+        return "bg-yellow-100 text-yellow-800";
+      case "Cancelado":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Confirmado':
+      case "Confirmado":
         return <CheckCircle className="h-4 w-4" />;
-      case 'Pendente':
+      case "Pendente":
         return <Clock className="h-4 w-4" />;
-      case 'Cancelado':
+      case "Cancelado":
         return <AlertCircle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
@@ -240,7 +265,7 @@ const Agenda = () => {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>
-                {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
+                {editingAgendamento ? "Editar Agendamento" : "Novo Agendamento"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -335,7 +360,7 @@ const Agenda = () => {
                   Cancelar
                 </Button>
                 <Button type="submit" className="bg-amber-600 hover:bg-amber-700">
-                  {editingAgendamento ? 'Atualizar' : 'Criar'}
+                  {editingAgendamento ? "Atualizar" : "Criar"}
                 </Button>
               </div>
             </form>
@@ -418,7 +443,7 @@ const Agenda = () => {
             <p className="text-center text-gray-500 py-8">
               {selectedDate 
                 ? `Nenhum agendamento encontrado para ${format(selectedDate, "dd/MM/yyyy")}`
-                : 'Nenhum agendamento encontrado'
+                : "Nenhum agendamento encontrado"
               }
             </p>
           ) : (
@@ -428,14 +453,14 @@ const Agenda = () => {
                   <div className="flex items-center space-x-6">
                     <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
                       <span className="text-amber-600 font-bold text-lg">
-                        {agendamento.cliente_nome?.charAt(0) || 'C'}
+                        {agendamento.cliente_nome?.charAt(0) || "C"}
                       </span>
                     </div>
                     <div className="space-y-2">
                       <h3 className="font-bold text-lg text-gray-900">{agendamento.cliente_nome}</h3>
                       <p className="font-semibold text-base text-gray-700">{agendamento.servico}</p>
                       <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-medium text-sm shadow-sm">
-                        {new Date(agendamento.data + 'T00:00:00').toLocaleDateString('pt-BR')} às {agendamento.hora}
+                        {new Date(agendamento.data + "T00:00:00").toLocaleDateString("pt-BR")} às {agendamento.hora}
                       </div>
                       {agendamento.observacoes && (
                         <p className="text-sm text-gray-600 italic mt-1">
@@ -451,9 +476,9 @@ const Agenda = () => {
                         {getStatusIcon(agendamento.status)}
                         {agendamento.status}
                       </Badge>
-                      {agendamento.preco && (
+                      {agendamento.preco !== undefined && agendamento.preco !== null && (
                         <p className="text-lg font-bold text-green-600">
-                          R$ {parseFloat(agendamento.preco).toFixed(2)}
+                          R$ { (typeof agendamento.preco === 'string' ? parseFloat(agendamento.preco.replace('R$', '').replace(',', '.')) : agendamento.preco / 100).toFixed(2) }
                         </p>
                       )}
                     </div>
@@ -488,3 +513,4 @@ const Agenda = () => {
 };
 
 export default Agenda;
+
