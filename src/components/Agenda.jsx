@@ -182,36 +182,32 @@ const Agenda = () => {
     setEditingAgendamento(null);
   };
 
-  const openEditDialog = (agendamento) => {
-    setEditingAgendamento(agendamento);
-    
-    // Converte o preço recebido do backend para um número em reais com ponto decimal
-    let precoFormatado = '';
-    if (agendamento.preco !== undefined && agendamento.preco !== null) {
-      if (typeof agendamento.preco === 'string') {
-        // Se for string 
+const openEditDialog = (agendamento) => {
+  setEditingAgendamento(agendamento);
 
+  let precoFormatado = '';
+  const preco = agendamento?.preco;
 
-{
-        // Se for string "R$XX,XX", remove "R$" e substitui vírgula por ponto
-        precoFormatado = parseFloat(agendamento.preco.replace("R$", "").replace(",", "."));
-      } else {
-        // Se for número, assume que está em centavos e divide por 100
-        precoFormatado = agendamento.preco / 100;
-      }
-    }
+  if (typeof preco === 'string') {
+    // "R$XX,XX"
+    precoFormatado = parseFloat(preco.replace('R$', '').replace(',', '.')) || '';
+  } else if (typeof preco === 'number') {
+    // Centavos
+    precoFormatado = (preco / 100).toFixed(2);
+  }
 
-    setFormData({
-      cliente_nome: agendamento.cliente_nome,
-      servico: agendamento.servico,
-      data: agendamento.data,
-      hora: agendamento.hora,
-      status: agendamento.status,
-      preco: precoFormatado, // Use o valor formatado aqui
-      observacoes: agendamento.observacoes || ""
-    });
-    setDialogOpen(true);
-  };
+  setFormData({
+    cliente_nome: agendamento.cliente_nome || '',
+    servico: agendamento.servico || '',
+    data: agendamento.data || '',
+    hora: agendamento.hora || '',
+    status: agendamento.status || 'Pendente',
+    preco: precoFormatado,
+    observacoes: agendamento.observacoes || ''
+  });
+
+  setDialogOpen(true);
+};
 
   const getStatusColor = (status) => {
     switch (status) {
