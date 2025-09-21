@@ -1,461 +1,533 @@
-import express from 'express';
-import { all, get, query } from '../database/database.js';
-import { verifyToken } from './auth.js';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import {
+  Calendar,
+  Plus,
+  Edit,
+  Trash2,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  CalendarDays,
+  Filter
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const router = express.Router();
+const Agenda = () => {
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAgendamento, setEditingAgendamento] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    cliente_nome: '',
+    servico: '',
+    data: '',
+    hora: '',
+    status: 'Pendente',
+    preco: '',
+    observacoes: ''
+  });
 
-// Lista estática de todos os serviços disponíveis
-const ALL_SERVICES = [
-  'Corte',
-  'Barba',
-  'Corte e Barba',
-  'Sobrancelha',
-  'Corte e Sobrancelha',
-  'Corte, Barba e Sobrancelha'
-];
+  const servicos = [
+    'Corte',
+    'Barba',
+    'Corte e Barba',
+    'Sobrancelha',
+    'Corte e Sobrancelha',
+    'Corte, Barba e Sobrancelha'
+  ];
 
-// Função auxiliar para formatar datas
-const formatDate = (date) => date.toISOString().split('T')[0];
+  useEffect(() => {
+    fetchAgendamentos();
+  }, []);
 
-// Função auxiliar para calcular datas baseadas no período
-const calcularPeriodo = (periodo, dataInicioReq, dataFimReq) => {
-  let dataInicio, dataFim;
-  const hoje = new Date();
-  hoje.setHours(23, 59, 59, 999); // Fim do dia atual
-  
-  if (dataInicioReq && dataFimReq) {
-    dataInicio = new Date(dataInicioReq);
-    dataFim = new Date(dataFimReq);
-    dataFim.setHours(23, 59, 59, 999);
-  } else {
-    const hojeCopia = new Date();
-    hojeCopia.setHours(0, 0, 0, 0); // Início do dia atual
-    
-    switch (periodo) {
-      case 'hoje':
-        dataInicio = new Date(hojeCopia);
-        dataFim = new Date(hoje);
-        break;
-      case 'ontem':
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setDate(hojeCopia.getDate() - 1);
-        dataFim = new Date(hojeCopia);
-        dataFim.setDate(hojeCopia.getDate() - 1);
-        dataFim.setHours(23, 59, 59, 999);
-        break;
-      case 'semana':
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setDate(hojeCopia.getDate() - 7);
-        dataFim = new Date(hoje);
-        break;
-      case 'ultimos_15_dias':
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setDate(hojeCopia.getDate() - 15);
-        dataFim = new Date(hoje);
-        break;
-      case 'trimestre':
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setMonth(hojeCopia.getMonth() - 3);
-        dataFim = new Date(hoje);
-        break;
-      case 'semestre':
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setMonth(hojeCopia.getMonth() - 6);
-        dataFim = new Date(hoje);
-        break;
-      case 'ano':
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setFullYear(hojeCopia.getFullYear() - 1);
-        dataFim = new Date(hoje);
-        break;
-      default: // mes
-        dataInicio = new Date(hojeCopia);
-        dataInicio.setMonth(hojeCopia.getMonth() - 1);
-        dataFim = new Date(hoje);
+  useEffect(() => {
+    filtrarAgendamentos();
+  }, [agendamentos, selectedDate]);
+
+  const fetchAgendamentos = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAgendamentos(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar agendamentos:', error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const filtrarAgendamentos = () => {
+    if (!selectedDate) {
+      setAgendamentosFiltrados(agendamentos);
+      return;
+    }
+
+    const dataFiltro = format(selectedDate, 'yyyy-MM-dd');
+    const agendamentosDoDia = agendamentos.filter(agendamento => 
+      agendamento.data === dataFiltro
+    );
+    setAgendamentosFiltrados(agendamentosDoDia);
+  };
+
+  const limparFiltro = () => {
+    setSelectedDate(null);
+    setCalendarOpen(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const token = localStorage.getItem('token');
+      const url = editingAgendamento 
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${editingAgendamento.id}`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+      
+      const method = editingAgendamento ? 'PUT' : 'POST';
+      
+      // Converter o preço de reais para centavos antes de enviar
+      const precoEmCentavos = formData.preco ? Math.round(parseFloat(formData.preco) * 100) : null;
+
+      const payload = {
+        ...formData,
+        preco: precoEmCentavos // Envia o preço em centavos
+      };
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        fetchAgendamentos();
+        setDialogOpen(false);
+        resetForm();
+      }
+    } catch (error) {
+      console.error('Erro ao salvar agendamento:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        fetchAgendamentos();
+      }
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      cliente_nome: '',
+      servico: '',
+      data: '',
+      hora: '',
+      status: 'Pendente',
+      preco: '',
+      observacoes: ''
+    });
+    setEditingAgendamento(null);
+  };
+
+const openEditDialog = (agendamento) => {
+  setEditingAgendamento(agendamento);
+
+const formatPreco = (precoRaw) => {
+  if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '';
+
+  if (typeof precoRaw === 'string') {
+    const s = precoRaw.trim();
+
+    if (/R\$/.test(s) || /,/.test(s)) {
+      const n = parseFloat(s.replace(/R\$|\s/g, '').replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(n)) return n.toFixed(2);
+      
+    const asNum = parseFloat(s);
+    if (!isNaN(asNum)) {
+      if (asNum >= 1000) return (asNum / 100).toFixed(2);
+      // senão, assume que já está em reais
+      return asNum.toFixed(2);
+    }
+
+    return '';
   }
-  
-  return { dataInicio, dataFim };
+
+  if (typeof precoRaw === 'number') {
+    if (precoRaw >= 1000) return (precoRaw / 100).toFixed(2);
+    return precoRaw.toFixed(2);
+  }
+
+  return '';
 };
 
-// Endpoint resumo - dados para a página de relatórios do frontend
-router.get('/resumo', verifyToken, async (req, res) => {
-  try {
-    const { periodo = 'mes', data_inicio: reqDataInicio, data_fim: reqDataFim } = req.query;
-    
-    const { dataInicio, dataFim } = calcularPeriodo(periodo, reqDataInicio, reqDataFim);
-    const dataInicioStr = formatDate(dataInicio);
-    const dataFimStr = formatDate(dataFim);
+const openEditDialog = (agendamento) => {
+  setEditingAgendamento(agendamento);
 
-    // Buscar serviços mais vendidos para o período selecionado
-    const servicosConfirmados = await all(`
-      SELECT 
-        servico as service, 
-        COUNT(*) as qty, 
-        SUM(COALESCE(preco, 0)) as revenue
-      FROM agendamentos 
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-      GROUP BY servico 
-    `, [dataInicioStr, dataFimStr]);
+  const precoFormatado = formatPreco(agendamento?.preco);
 
-    // Preencher com serviços que não tiveram agendamentos
-    const servicosMaisVendidos = ALL_SERVICES.map(serviceName => {
-      const found = servicosConfirmados.find(s => s.service === serviceName);
-      return {
-        service: serviceName,
-        qty: found ? found.qty : 0,
-        revenue: found ? found.revenue : 0
-      };
-    }).sort((a, b) => b.qty - a.qty); // Ordenar por quantidade, se houver
+  setFormData({
+    cliente_nome: agendamento?.cliente_nome ?? '',
+    servico: agendamento?.servico ?? '',
+    data: agendamento?.data ?? '',
+    hora: agendamento?.hora ?? '',
+    status: agendamento?.status ?? 'Pendente',
+    preco: precoFormatado ? `R$ ${precoFormatado}` : '',
+    observacoes: agendamento?.observacoes ?? ''
+  });
 
-    // Buscar totais para receita (sempre calculados dinamicamente)
-    const hoje = new Date();
-    const hojeCopia = new Date();
-    hojeCopia.setHours(0, 0, 0, 0); // Início do dia atual
-    
-    const receitaDiariaTotal = await all(`
-      SELECT SUM(COALESCE(preco, 0)) as total 
-      FROM agendamentos 
-      WHERE data = ? AND status = 'Confirmado'
-    `, [formatDate(hojeCopia)]); 
-
-    const semanaAtras = new Date(hojeCopia);
-    semanaAtras.setDate(hojeCopia.getDate() - 7);
-    const receitaSemanalTotal = await all(`
-      SELECT SUM(COALESCE(preco, 0)) as total 
-      FROM agendamentos 
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-    `, [formatDate(semanaAtras), formatDate(hoje)]);
-
-    const mesAtras = new Date(hojeCopia);
-    mesAtras.setMonth(hojeCopia.getMonth() - 1);
-    const receitaMensalTotal = await all(`
-      SELECT SUM(COALESCE(preco, 0)) as total 
-      FROM agendamentos 
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-    `, [formatDate(mesAtras), formatDate(hoje)]);
-
-    // Receita por hora para o dia atual (sempre do dia atual, independente do período)
-    const receitaPorHoraHoje = await all(`
-      SELECT 
-        strftime('%H:00', hora) as hour,
-        SUM(COALESCE(preco, 0)) as revenue
-      FROM agendamentos
-      WHERE data = ? AND status = 'Confirmado'
-      GROUP BY hour
-      ORDER BY hour ASC
-    `, [formatDate(hojeCopia)]);
-
-    // Receita por dia da semana para o período selecionado
-    const receitaPorDiaSemanaRaw = await all(`
-      SELECT 
-        CASE strftime('%w', data)
-          WHEN '0' THEN 'Dom'
-          WHEN '1' THEN 'Seg'
-          WHEN '2' THEN 'Ter'
-          WHEN '3' THEN 'Qua'
-          WHEN '4' THEN 'Qui'
-          WHEN '5' THEN 'Sex'
-          WHEN '6' THEN 'Sáb'
-        END as day_of_week,
-        SUM(COALESCE(preco, 0)) as revenue
-      FROM agendamentos
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-      GROUP BY day_of_week
-      ORDER BY strftime('%w', data) ASC
-    `, [dataInicioStr, dataFimStr]);
-
-    // Garantir que todos os dias da semana (Seg-Sáb) estejam presentes
-    const diasSemanaOrdem = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    const receitaPorDiaSemana = diasSemanaOrdem.map(dia => {
-      const found = receitaPorDiaSemanaRaw.find(r => r.day_of_week === dia);
-      return {
-        day_of_week: dia,
-        revenue: found ? found.revenue : 0
-      };
-    });
-
-    // Receita por semana (últimas 4 semanas) para o período selecionado
-    // Ajuste para garantir que sempre retorne 4 semanas, mesmo que vazias
-    const receitaPorSemanaRaw = await all(`
-      SELECT 
-        strftime('%Y-%W', data) as week_id,
-        SUM(COALESCE(preco, 0)) as revenue
-      FROM agendamentos
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-      GROUP BY week_id
-      ORDER BY week_id DESC
-      LIMIT 4
-    `, [dataInicioStr, dataFimStr]);
-
-    const semanasCompletas = [];
-    for (let i = 0; i < 4; i++) {
-      const weekDate = new Date(dataFim);
-      weekDate.setDate(dataFim.getDate() - (i * 7));
-      const weekId = `${weekDate.getFullYear()}-${Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))}`;
-      const found = receitaPorSemanaRaw.find(s => s.week_id === weekId);
-      semanasCompletas.unshift({
-        week_label: `Semana ${Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1}`,
-        revenue: found ? found.revenue : 0
-      });
+  setDialogOpen(true);
+};
+  
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Confirmado":
+        return "bg-green-100 text-green-800";
+      case "Pendente":
+        return "bg-yellow-100 text-yellow-800";
+      case "Cancelado":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
+  };
 
-    // Buscar top clientes para o período selecionado
-    const topClientes = await all(`
-      SELECT 
-        cliente_nome as name,
-        COUNT(*) as visits,
-        MAX(data) as last_visit,
-        SUM(COALESCE(preco, 0)) as spent
-      FROM agendamentos 
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-      GROUP BY cliente_nome 
-      ORDER BY visits DESC, spent DESC
-      LIMIT 10
-    `, [dataInicioStr, dataFimStr]);
-
-    res.json({
-      by_service: servicosMaisVendidos || [],
-      totals: {
-        daily: receitaDiariaTotal[0]?.total || 0,
-        weekly: receitaSemanalTotal[0]?.total || 0,
-        monthly: receitaMensalTotal[0]?.total || 0
-      },
-      revenue_by_hour_today: receitaPorHoraHoje || [],
-      revenue_by_day_of_week: receitaPorDiaSemana || [],
-      revenue_by_week: semanasCompletas || [],
-      top_clients: topClientes || [],
-      period_info: {
-        start_date: dataInicioStr,
-        end_date: dataFimStr,
-        period: periodo
-      }
-    });
-  } catch (error) {
-    console.error('Erro ao buscar resumo de relatórios:', error);
-    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
-  }
-});
-
-// Novo endpoint específico para receita dos últimos 15 dias
-router.get('/receita-ultimos-15-dias', verifyToken, async (req, res) => {
-  try {
-    const hoje = new Date();
-    hoje.setHours(23, 59, 59, 999);
-    const quinzeDiasAtras = new Date();
-    quinzeDiasAtras.setDate(hoje.getDate() - 14); // Corrigido para incluir 15 dias (hoje + 14 anteriores)
-    quinzeDiasAtras.setHours(0, 0, 0, 0);
-
-    const receitaPorDiaRaw = await all(`
-      SELECT 
-        data,
-        SUM(COALESCE(preco, 0)) as revenue
-      FROM agendamentos
-      WHERE data BETWEEN ? AND ? AND status = 'Confirmado'
-      GROUP BY data
-      ORDER BY data ASC
-    `, [formatDate(quinzeDiasAtras), formatDate(hoje)]);
-
-    // Preencher dias sem receita com 0
-    const diasCompletos = [];
-    for (let i = 0; i < 15; i++) { // Loop para 15 dias
-      const dia = new Date(quinzeDiasAtras);
-      dia.setDate(quinzeDiasAtras.getDate() + i);
-      const diaStr = formatDate(dia);
-      const dadosDia = receitaPorDiaRaw.find(r => r.data === diaStr);
-      
-      diasCompletos.push({
-        data: diaStr,
-        dia_semana: dia.toLocaleDateString('pt-BR', { weekday: 'short' }),
-        receita: dadosDia ? dadosDia.revenue : 0
-      });
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Confirmado":
+        return <CheckCircle className="h-4 w-4" />;
+      case "Pendente":
+        return <Clock className="h-4 w-4" />;
+      case "Cancelado":
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
     }
+  };
 
-    res.json({
-      receita_por_dia: diasCompletos,
-      total_periodo: diasCompletos.reduce((sum, dia) => sum + dia.receita, 0)
-    });
-  } catch (error) {
-    console.error('Erro ao buscar receita dos últimos 15 dias:', error);
-    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+      </div>
+    );
   }
-});
 
-// Dashboard - dados gerais
-router.get('/dashboard', verifyToken, async (req, res) => {
-  try {
-    const hoje = new Date().toISOString().split('T')[0];
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
+          <p className="text-gray-600">Gerencie os agendamentos da barbearia</p>
+        </div>
+        
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm} className="bg-amber-600 hover:bg-amber-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Agendamento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                {editingAgendamento ? "Editar Agendamento" : "Novo Agendamento"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="cliente_nome">Nome do Cliente</Label>
+                <Input
+                  id="cliente_nome"
+                  value={formData.cliente_nome}
+                  onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="servico">Serviço</Label>
+                <Select value={formData.servico} onValueChange={(value) => setFormData({...formData, servico: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servicos.map((servico) => (
+                      <SelectItem key={servico} value={servico}>
+                        {servico}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="data">Data</Label>
+                  <Input
+                    id="data"
+                    type="date"
+                    value={formData.data}
+                    onChange={(e) => setFormData({...formData, data: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hora">Hora</Label>
+                  <Input
+                    id="hora"
+                    type="time"
+                    value={formData.hora}
+                    onChange={(e) => setFormData({...formData, hora: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      <SelectItem value="Confirmado">Confirmado</SelectItem>
+                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="preco">Preço (R$)</Label>
+                  <Input
+                    id="preco"
+                    type="number"
+                    step="0.01"
+                    value={formData.preco}
+                    onChange={(e) => setFormData({...formData, preco: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações</Label>
+                <Input
+                  id="observacoes"
+                  value={formData.observacoes}
+                  onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-amber-600 hover:bg-amber-700">
+                  {editingAgendamento ? "Atualizar" : "Criar"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-    // Buscar dados do dashboard
-    const agendamentosHoje = await all('SELECT COUNT(*) as total FROM agendamentos WHERE data = ?', [hoje]);
-    const receitaHoje = await all('SELECT SUM(preco) as total FROM agendamentos WHERE data = ? AND status = ?', [hoje, 'Confirmado']);
-    const proximosAgendamentos = await all('SELECT * FROM agendamentos WHERE data >= ? ORDER BY data, hora LIMIT 5', [hoje]);
-    const servicosRealizados = await all('SELECT COUNT(*) as total FROM agendamentos WHERE data = ? AND status = ?', [hoje, 'Confirmado']);
+      {/* Filtro de Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-amber-600" />
+            Filtrar por Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 flex-wrap">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-[280px] justify-start text-left font-normal"
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {selectedDate ? (
+                    format(selectedDate, "dd/MM/yyyy")
+                  ) : (
+                    <span>Selecione uma data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    setSelectedDate(date);
+                    setCalendarOpen(false);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            
+            {selectedDate && (
+              <Button
+                variant="outline"
+                onClick={limparFiltro}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Limpar Filtro
+              </Button>
+            )}
+            
+            <div className="text-sm text-gray-600">
+              {selectedDate ? (
+                `Mostrando agendamentos de ${format(selectedDate, "dd/MM/yyyy")} (${agendamentosFiltrados.length})`
+              ) : (
+                `Mostrando todos os agendamentos (${agendamentos.length})`
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-    res.json({
-      atendimentosHoje: agendamentosHoje[0]?.total || 0,
-      receitaDia: receitaHoje[0]?.total || 0,
-      proximosAgendamentos: proximosAgendamentos.length,
-      servicosRealizados: servicosRealizados[0]?.total || 0,
-      agendamentos: proximosAgendamentos,
-      servicos: []
-    });
-  } catch (error) {
-    console.error('Erro ao buscar dados do dashboard:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-amber-600" />
+            Agendamentos
+            {selectedDate && (
+              <span className="text-sm font-normal text-gray-600">
+                - {format(selectedDate, "dd/MM/yyyy")}
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {agendamentosFiltrados.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">
+              {selectedDate 
+                ? `Nenhum agendamento encontrado para ${format(selectedDate, "dd/MM/yyyy")}`
+                : "Nenhum agendamento encontrado"
+              }
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {agendamentosFiltrados.map((agendamento) => (
+                <div key={agendamento.id} className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-6">
+                    <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
+                      <span className="text-amber-600 font-bold text-lg">
+                        {agendamento.cliente_nome?.charAt(0) || "C"}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg text-gray-900">{agendamento.cliente_nome}</h3>
+                      <p className="font-semibold text-base text-gray-700">{agendamento.servico}</p>
+                      <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-medium text-sm shadow-sm">
+                        {new Date(agendamento.data + "T00:00:00").toLocaleDateString("pt-BR")} às {agendamento.hora}
+                      </div>
+                      {agendamento.observacoes && (
+                        <p className="text-sm text-gray-600 italic mt-1">
+                          Obs: {agendamento.observacoes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right space-y-2">
+                      <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1`}>
+                        {getStatusIcon(agendamento.status)}
+                        {agendamento.status}
+                      </Badge>
+                      {agendamento.preco !== undefined && agendamento.preco !== null && (
+                        <p className="text-lg font-bold text-green-600">
+                          R$ { (typeof agendamento.preco === 'string' ? parseFloat(agendamento.preco.replace('R$', '').replace(',', '.')) : agendamento.preco / 100).toFixed(2) }
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditDialog(agendamento)}
+                        className="hover:bg-amber-50 hover:border-amber-300"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(agendamento.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
-// Relatório mensal
-router.get('/mensal', verifyToken, async (req, res) => {
-  try {
-    const { dataInicio, dataFim } = req.query;
-    
-    let whereClause = '';
-    let params = [];
-    
-    if (dataInicio && dataFim) {
-      whereClause = 'WHERE data BETWEEN ? AND ?';
-      params = [dataInicio, dataFim];
-    } else {
-      // Último mês por padrão
-      const hoje = new Date();
-      const umMesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
-      whereClause = 'WHERE data BETWEEN ? AND ?';
-      params = [formatDate(umMesAtras), formatDate(hoje)];
-    }
-
-    const totalAgendamentos = await all(`SELECT COUNT(*) as total FROM agendamentos ${whereClause}`, params);
-    const receitaTotal = await all(`SELECT SUM(preco) as total FROM agendamentos ${whereClause} AND status = 'Confirmado'`, params);
-    const clientesAtivos = await all(`SELECT COUNT(DISTINCT cliente_nome) as total FROM agendamentos ${whereClause}`, params);
-    const servicosMaisRealizados = await all(`
-      SELECT servico as nome, COUNT(*) as quantidade 
-      FROM agendamentos ${whereClause} 
-      GROUP BY servico 
-      ORDER BY quantidade DESC 
-      LIMIT 5
-    `, params);
-
-    res.json({
-      totalAgendamentos: totalAgendamentos[0]?.total || 0,
-      receitaTotal: receitaTotal[0]?.total || 0,
-      clientesAtivos: clientesAtivos[0]?.total || 0,
-      servicosMaisRealizados: servicosMaisRealizados
-    });
-  } catch (error) {
-    console.error('Erro ao gerar relatório mensal:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Exportar relatório CSV
-router.get('/exportar', verifyToken, async (req, res) => {
-  try {
-    const { dataInicio, dataFim } = req.query;
-    
-    let whereClause = '';
-    let params = [];
-    
-    if (dataInicio && dataFim) {
-      whereClause = 'WHERE data BETWEEN ? AND ?';
-      params = [dataInicio, dataFim];
-    }
-
-    const agendamentos = await all(`
-      SELECT 
-        data, 
-        hora, 
-        cliente_nome, 
-        servico, 
-        status, 
-        preco,
-        observacoes
-      FROM agendamentos 
-      ${whereClause}
-      ORDER BY data, hora
-    `, params);
-
-    // Gerar CSV
-    let csv = 'Data,Hora,Cliente,Serviço,Status,Preço,Observações\n';
-    agendamentos.forEach(agendamento => {
-      csv += `${agendamento.data},${agendamento.hora},"${agendamento.cliente_nome}","${agendamento.servico}",${agendamento.status},${agendamento.preco || 0},"${agendamento.observacoes || ''}"\n`;
-    });
-
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="relatorio_barbearia.csv"');
-    res.send(csv);
-  } catch (error) {
-    console.error('Erro ao exportar relatório:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Webhook para N8N - IMPORTANTE: Endpoint para integração
-router.post('/n8n', async (req, res) => {
-  try {
-    // Verificar se os dados estão no body ou query
-    const dados = req.body.tipo ? req.body : req.query;
-    const { tipo, cliente, telefone, servico, data, hora, preco } = dados;
-
-    console.log('Webhook N8N recebido:', dados);
-
-    if (tipo === 'novo_agendamento') {
-      if (!cliente || !servico || !data || !hora) {
-        return res.status(400).json({ error: 'Dados incompletos para agendamento' });
-      }
-
-      // Processar o preço - converter de string "R$80,00" para centavos
-      let precoEmCentavos = 0;
-      if (preco) {
-        // Remover "R$" e converter vírgula para ponto, depois multiplicar por 100
-        const precoLimpo = preco.replace('R$', '').replace(',', '.').trim();
-        const precoFloat = parseFloat(precoLimpo);
-        if (!isNaN(precoFloat)) {
-          precoEmCentavos = Math.round(precoFloat * 100);
-        }
-      }
-
-      // Verificar se já existe um cliente com esse nome
-      let clienteId = null;
-      const clienteExistente = await get('SELECT id FROM clientes WHERE nome = ?', [cliente]);
-      
-      if (!clienteExistente && telefone) {
-        // Criar novo cliente se não existir
-        const novoCliente = await query(
-          'INSERT INTO clientes (nome, telefone) VALUES (?, ?)',
-          [cliente, telefone]
-        );
-        clienteId = novoCliente.lastID;
-      } else if (clienteExistente) {
-        clienteId = clienteExistente.id;
-      }
-
-      // Criar agendamento com preço
-      const result = await query(
-        'INSERT INTO agendamentos (cliente_id, cliente_nome, servico, data, hora, status, preco) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [clienteId, cliente, servico, data, hora, 'Pendente', precoEmCentavos]
-      );
-      
-      res.json({
-        id: result.lastID,
-        message: 'Agendamento criado com sucesso via N8N',
-        agendamento: {
-          id: result.lastID,
-          cliente_nome: cliente,
-          servico,
-          data,
-          hora,
-          status: 'Pendente',
-          preco: precoEmCentavos
-        }
-      });
-    } else {
-      res.status(400).json({ error: 'Tipo de operação não suportado' });
-    }
-  } catch (error) {
-    console.error('Erro ao processar webhook N8N:', error);
-    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
-  }
-});
-
-export default router;
+export default Agenda;
