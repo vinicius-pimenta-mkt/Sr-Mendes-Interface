@@ -213,9 +213,30 @@ const formatPreco = (precoRaw) => {
   return '';
 };
 
+const formatPreco = (precoRaw) => {
+  if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '';
+
+  if (typeof precoRaw === 'string') {
+    const s = precoRaw.trim();
+    if (/R\$/.test(s) || /,/.test(s)) {
+      const n = parseFloat(s.replace(/R\$|\s/g, '').replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(n)) return n.toFixed(2);
+    }
+    const asNum = parseFloat(s);
+    if (!isNaN(asNum)) {
+      return asNum >= 1000 ? (asNum / 100).toFixed(2) : asNum.toFixed(2);
+    }
+    return '';
+  }
+
+  if (typeof precoRaw === 'number') {
+    return precoRaw >= 1000 ? (precoRaw / 100).toFixed(2) : precoRaw.toFixed(2);
+  }
+  return '';
+};
+
 const openEditDialog = (agendamento) => {
   setEditingAgendamento(agendamento);
-
   const precoFormatado = formatPreco(agendamento?.preco);
 
   setFormData({
