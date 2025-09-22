@@ -294,7 +294,7 @@ const Relatorios = () => {
                       </div>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="font-bold text-gray-900">R$ {servico.receita.toFixed(2)}</p>
+                      <p className="font-bold text-gray-900">R$ {servico.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       <p className="text-sm text-gray-500">receita total</p>
                     </div>
                   </div>
@@ -353,7 +353,7 @@ const Relatorios = () => {
                     </div>
                     <div className="text-left sm:text-right">
                       <p className="font-bold text-gray-900">{cliente.visitas} visitas</p>
-                      <p className="text-sm text-gray-500">R$ {cliente.gasto.toFixed(2)} gasto</p>
+                      <p className="text-sm text-gray-500">R$ {cliente.gasto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} gasto</p>
                     </div>
                   </div>
                 ))}
