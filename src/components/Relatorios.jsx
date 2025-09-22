@@ -294,7 +294,7 @@ const Relatorios = () => {
                       </div>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="font-bold text-gray-900">R$ {(servico.receita / 100).toLocaleString(\'pt-BR\', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}p>
+                      <p className="font-bold text-gray-900">R$ {(servico.receita / 100).toLocaleString(\'pt-BR\', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       <p className="text-sm text-gray-500">receita total</p>
                     </div>
                   </div>
