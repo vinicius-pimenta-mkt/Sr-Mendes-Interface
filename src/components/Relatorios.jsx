@@ -51,7 +51,6 @@ const Relatorios = () => {
         } else if (periodo === 'ontem') {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         } else {
-          // Para outros períodos, enviar o parâmetro período
           params = `?periodo=${periodo}`;
         }
 
@@ -64,20 +63,18 @@ const Relatorios = () => {
         if (response.ok) {
           const data = await response.json();
 
-          // Processar serviços mais vendidos - agora incluindo todos os serviços
+          // Ajuste: não dividir por 100 se o backend já envia em reais
           const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
           const servicosCompletos = apiServicos.map(s => ({
             nome: s.service,
             quantidade: s.qty,
-            receita: s.revenue / 100
-          })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
+            receita: s.revenue // <-- sem /100
+          })).sort((a, b) => b.quantidade - a.quantidade);
           setServicosMaisVendidos(servicosCompletos);
 
-          // Processar dados de receita detalhada
           if (data.receita_detalhada && Array.isArray(data.receita_detalhada)) {
             setReceitaTempos(data.receita_detalhada);
           } else if (data.totals) {
-            // Fallback para a estrutura antiga
             setReceitaTempos([
               { periodo: "Hoje", valor: data.totals.daily || 0 },
               { periodo: "Semana", valor: data.totals.weekly || 0 },
@@ -91,7 +88,7 @@ const Relatorios = () => {
                 nome: c.name,
                 visitas: c.visits,
                 ultimaVisita: c.last_visit,
-                gasto: c.spent / 100
+                gasto: c.spent // <-- sem /100
               }))
             );
           }
@@ -107,12 +104,7 @@ const Relatorios = () => {
   }, [periodo]);
 
   const CORES_GRAFICO = [
-    "#FFD700", // amarelo mais vibrante
-    "#1A1A1A", // preto mais escuro
-    "#333333", // cinza escuro
-    "#FFA500", // laranja dourado
-    "#000000", // preto puro
-    "#FFFF00"  // amarelo puro
+    "#FFD700", "#1A1A1A", "#333333", "#FFA500", "#000000", "#FFFF00"
   ];
 
   const exportarRelatorio = () => {
@@ -125,9 +117,7 @@ const Relatorios = () => {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.payload.nome}</p>
-          <p className="text-sm text-gray-600">
-            Quantidade: {data.value}
-          </p>
+          <p className="text-sm text-gray-600">Quantidade: {data.value}</p>
         </div>
       );
     }
@@ -140,10 +130,7 @@ const Relatorios = () => {
       <div className="flex flex-wrap justify-center gap-2 mt-4">
         {payload.map((entry, index) => (
           <div key={`legend-${index}`} className="flex items-center gap-1 text-xs">
-            <div 
-              className="w-3 h-3 rounded-sm" 
-              style={{ backgroundColor: entry.color }}
-            />
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
             <span className="text-gray-700">
               {entry.payload.nome.length > 15 
                 ? entry.payload.nome.substring(0, 15) + "..." 
@@ -172,9 +159,7 @@ const Relatorios = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Relatórios</h1>
-          <p className="text-gray-600">
-            Análise de desempenho e estatísticas da barbearia
-          </p>
+          <p className="text-gray-600">Análise de desempenho e estatísticas da barbearia</p>
         </div>
         <Button
           onClick={exportarRelatorio}
@@ -224,7 +209,6 @@ const Relatorios = () => {
         {/* --- SERVIÇOS --- */}
         <TabsContent value="servicos" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Gráfico de Barras */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -245,7 +229,6 @@ const Relatorios = () => {
               </CardContent>
             </Card>
 
-            {/* Gráfico de Pizza */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Distribuição de Serviços</CardTitle>
@@ -254,7 +237,7 @@ const Relatorios = () => {
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)} // Apenas serviços com quantidade > 0 no gráfico de pizza
+                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)}
                       cx="50%"
                       cy="40%"
                       outerRadius={80}
@@ -265,17 +248,13 @@ const Relatorios = () => {
                       ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend 
-                      content={renderLegend}
-                      wrapperStyle={{ paddingTop: '20px' }}
-                    />
+                    <Legend content={renderLegend} wrapperStyle={{ paddingTop: '20px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
 
-          {/* Ranking Detalhado */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Ranking Detalhado de Serviços</CardTitle>
