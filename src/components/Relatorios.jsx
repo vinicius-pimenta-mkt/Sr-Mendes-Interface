@@ -68,7 +68,8 @@ const Relatorios = () => {
           const servicosCompletos = apiServicos.map(s => ({
             nome: s.service,
             quantidade: s.qty,
-            receita: s.revenue // <-- sem /100
+            - receita: s.revenue
+            + receita: s.revenue / 10000
           })).sort((a, b) => b.quantidade - a.quantidade);
           setServicosMaisVendidos(servicosCompletos);
 
@@ -88,7 +89,8 @@ const Relatorios = () => {
                 nome: c.name,
                 visitas: c.visits,
                 ultimaVisita: c.last_visit,
-                gasto: c.spent // <-- sem /100
+                -   gasto: c.spent
+                +   gasto: c.spent / 10000
               }))
             );
           }
