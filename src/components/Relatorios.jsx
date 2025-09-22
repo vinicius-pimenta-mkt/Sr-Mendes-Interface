@@ -294,7 +294,7 @@ const Relatorios = () => {
                       </div>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="font-bold text-gray-900">R$ {(servico.receita / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-gray-900">R$ {servico.receita.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       <p className="text-sm text-gray-500">receita total</p>
                     </div>
                   </div>
@@ -318,8 +318,8 @@ const Relatorios = () => {
                 <LineChart data={receitaTempos}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="periodo" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(value) => `R$ ${(value / 100).toFixed(2)}`} />
-                  <Tooltip formatter={(value) => [`R$ ${(value / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Receita"]} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(value) =>R$ ${value.toFixed(2)}} />
+                  <Tooltip formatter={(value) => [R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, "Receita"]} />
                   <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ fill: "#000", r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -353,7 +353,7 @@ const Relatorios = () => {
                     </div>
                     <div className="text-left sm:text-right">
                       <p className="font-bold text-gray-900">{cliente.visitas} visitas</p>
-                      <p className="text-sm text-gray-500">R$ {(cliente.gasto / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} gasto</p>
+                      <p className="text-sm text-gray-500">R$ {cliente.gasto.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} gasto</p>
                     </div>
                   </div>
                 ))}
