@@ -32,10 +32,6 @@ const Relatorios = () => {
   const [periodo, setPeriodo] = useState("mes");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
-  const [receitaPorHora, setReceitaPorHora] = useState([]);
-  const [receitaPorDiaSemana, setReceitaPorDiaSemana] = useState([]);
-  const [receitaPorSemana, setReceitaPorSemana] = useState([]);
-  const [receitaUltimos15Dias, setReceitaUltimos15Dias] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,6 +51,7 @@ const Relatorios = () => {
         } else if (periodo === 'ontem') {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         } else {
+          // Para outros períodos, enviar o parâmetro período
           params = `?periodo=${periodo}`;
         }
 
@@ -67,51 +64,25 @@ const Relatorios = () => {
         if (response.ok) {
           const data = await response.json();
 
+          // Processar serviços mais vendidos - agora incluindo todos os serviços
           const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
           const servicosCompletos = apiServicos.map(s => ({
             nome: s.service,
             quantidade: s.qty,
             receita: s.revenue / 100
-          })).sort((a, b) => b.quantidade - a.quantidade);
+          })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
           setServicosMaisVendidos(servicosCompletos);
 
-          if (data.totals) {
+          // Processar dados de receita detalhada
+          if (data.receita_detalhada && Array.isArray(data.receita_detalhada)) {
+            setReceitaTempos(data.receita_detalhada);
+          } else if (data.totals) {
+            // Fallback para a estrutura antiga
             setReceitaTempos([
-              { periodo: "Hoje", valor: (data.totals.daily || 0) / 100 },
-              { periodo: "Semana", valor: (data.totals.weekly || 0) / 100 },
-              { periodo: "Mês", valor: (data.totals.monthly || 0) / 100 }
+              { periodo: "Hoje", valor: data.totals.daily || 0 },
+              { periodo: "Semana", valor: data.totals.weekly || 0 },
+              { periodo: "Mês", valor: data.totals.monthly || 0 }
             ]);
-          }
-
-          const horasCompletas = [];
-          for (let i = 8; i <= 18; i++) {
-            const horaStr = `${i.toString().padStart(2, '0')}:00`;
-            const dadosHora = Array.isArray(data.revenue_by_hour_today) ? 
-              data.revenue_by_hour_today.find(h => h.hour === horaStr) : null;
-            horasCompletas.push({
-              hora: horaStr,
-              receita: dadosHora ? dadosHora.revenue / 100 : 0
-            });
-          }
-          setReceitaPorHora(horasCompletas);
-
-          const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-          const diasCompletos = diasSemana.map(dia => {
-            const dadosDia = Array.isArray(data.revenue_by_day_of_week) ? 
-              data.revenue_by_day_of_week.find(d => d.day_of_week === dia) : null;
-            return {
-              dia: dia,
-              receita: dadosDia ? dadosDia.revenue / 100 : 0
-            };
-          });
-          setReceitaPorDiaSemana(diasCompletos);
-
-          if (Array.isArray(data.revenue_by_week)) {
-            const semanasCompletas = data.revenue_by_week.map(s => ({
-              semana: s.week_label || 'Semana',
-              receita: s.revenue / 100
-            }));
-            setReceitaPorSemana(semanasCompletas);
           }
 
           if (Array.isArray(data.top_clients)) {
@@ -125,29 +96,6 @@ const Relatorios = () => {
             );
           }
         }
-
-        if (periodo === 'ultimos_15_dias') {
-          const response15Dias = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/receita-ultimos-15-dias`, {
-            headers: {
-              "Authorization": `Bearer ${token}`,
-            },
-          });
-
-          if (response15Dias.ok) {
-            const data15Dias = await response15Dias.json();
-            if (Array.isArray(data15Dias.receita_por_dia)) {
-              const dadosFormatados = data15Dias.receita_por_dia.map(d => ({
-                data: d.data,
-                dia: d.dia_semana,
-                receita: d.receita / 100
-              }));
-              setReceitaUltimos15Dias(dadosFormatados);
-            }
-          } else {
-            console.error('Erro ao buscar receita dos últimos 15 dias:', response15Dias.status);
-          }
-        }
-
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
       } finally {
@@ -159,12 +107,12 @@ const Relatorios = () => {
   }, [periodo]);
 
   const CORES_GRAFICO = [
-    "#FFD700",
-    "#1A1A1A",
-    "#333333",
-    "#FFA500",
-    "#000000",
-    "#FFFF00"
+    "#FFD700", // amarelo mais vibrante
+    "#1A1A1A", // preto mais escuro
+    "#333333", // cinza escuro
+    "#FFA500", // laranja dourado
+    "#000000", // preto puro
+    "#FFFF00"  // amarelo puro
   ];
 
   const exportarRelatorio = () => {
@@ -180,19 +128,6 @@ const Relatorios = () => {
           <p className="text-sm text-gray-600">
             Quantidade: {data.value}
           </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const CustomTooltipReceita = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900">{label}</p>
-          <p className="text-sm text-gray-600">Receita: R$ {data.value.toFixed(2)}</p>
         </div>
       );
     }
@@ -233,6 +168,7 @@ const Relatorios = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Relatórios</h1>
@@ -250,6 +186,7 @@ const Relatorios = () => {
         </Button>
       </div>
 
+      {/* Filtro de Período */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
@@ -265,7 +202,7 @@ const Relatorios = () => {
                 <SelectItem value="hoje">Hoje</SelectItem>
                 <SelectItem value="ontem">Ontem</SelectItem>
                 <SelectItem value="semana">Última Semana</SelectItem>
-                <SelectItem value="ultimos_15_dias">Últimos 15 Dias</SelectItem>
+                <SelectItem value="ultimos15dias">Últimos 15 Dias</SelectItem>
                 <SelectItem value="mes">Último Mês</SelectItem>
                 <SelectItem value="trimestre">Último Trimestre</SelectItem>
                 <SelectItem value="semestre">Último Semestre</SelectItem>
@@ -276,6 +213,7 @@ const Relatorios = () => {
         </CardContent>
       </Card>
 
+      {/* Tabs */}
       <Tabs defaultValue="servicos" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
@@ -283,8 +221,10 @@ const Relatorios = () => {
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
         </TabsList>
 
+        {/* --- SERVIÇOS --- */}
         <TabsContent value="servicos" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Gráfico de Barras */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -305,6 +245,7 @@ const Relatorios = () => {
               </CardContent>
             </Card>
 
+            {/* Gráfico de Pizza */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Distribuição de Serviços</CardTitle>
@@ -313,7 +254,7 @@ const Relatorios = () => {
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)}
+                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)} // Apenas serviços com quantidade > 0 no gráfico de pizza
                       cx="50%"
                       cy="40%"
                       outerRadius={80}
@@ -334,6 +275,7 @@ const Relatorios = () => {
             </Card>
           </div>
 
+          {/* Ranking Detalhado */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Ranking Detalhado de Serviços</CardTitle>
@@ -362,12 +304,13 @@ const Relatorios = () => {
           </Card>
         </TabsContent>
 
+        {/* --- RECEITA --- */}
         <TabsContent value="receita" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita Comparativa
+                Receita
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -376,120 +319,41 @@ const Relatorios = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="periodo" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltipReceita />} />
+                  <Tooltip formatter={(value) => [`R$ ${value}`, "Receita"]} />
                   <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ fill: "#000", r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita por Horário (Hoje - 8h às 18h)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={receitaPorHora}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="hora" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltipReceita />} />
-                  <Bar dataKey="receita" fill="#FFC107" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita por Dia da Semana
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={receitaPorDiaSemana}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="dia" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltipReceita />} />
-                  <Bar dataKey="receita" fill="#FFC107" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-                Receita por Semana (Últimas 4 Semanas)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={receitaPorSemana}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="semana" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltipReceita />} />
-                  <Bar dataKey="receita" fill="#FFC107" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {periodo === 'ultimos_15_dias' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <TrendingUp className="h-5 w-5 text-amber-600" />
-                  Receita dos Últimos 15 Dias
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={receitaUltimos15Dias}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="data" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip content={<CustomTooltipReceita />} />
-                    <Line type="monotone" dataKey="receita" stroke="#FFC107" strokeWidth={3} dot={{ fill: "#000", r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
+        {/* --- CLIENTES --- */}
         <TabsContent value="clientes" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Users className="h-5 w-5 text-amber-600" />
-                Top Clientes
+                Frequência dos Clientes
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {frequenciaClientes.map((cliente, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4">
+                  <div key={cliente.nome} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600">
-                        {index + 1}
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600">
+                        #{index + 1}
                       </div>
                       <div>
                         <h3 className="font-medium text-gray-900">{cliente.nome}</h3>
-                        <p className="text-sm text-gray-500">{cliente.visitas} visitas</p>
+                        <p className="text-sm text-gray-500">
+                          Última visita: {new Date(cliente.ultimaVisita).toLocaleDateString("pt-BR")}
+                        </p>
                       </div>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="font-bold text-gray-900">Gasto Total: R$ {cliente.gasto.toFixed(2)}</p>
-                      <p className="text-sm text-gray-500">Última visita: {cliente.ultimaVisita}</p>
+                      <p className="font-bold text-gray-900">{cliente.visitas} visitas</p>
+                      <p className="text-sm text-gray-500">R$ {cliente.gasto.toFixed(2)} gasto</p>
                     </div>
                   </div>
                 ))}
@@ -503,4 +367,3 @@ const Relatorios = () => {
 };
 
 export default Relatorios;
-
