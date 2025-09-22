@@ -319,7 +319,7 @@ const Relatorios = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="periodo" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} tickFormatter={(value) => `R$ ${value.toFixed(2)}`} />
-                  <Tooltip formatter={(value) => [R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, "Receita"]} />
+                  <Tooltip formatter={(value) => [`R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Receita"]} />
                   <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ fill: "#000", r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
