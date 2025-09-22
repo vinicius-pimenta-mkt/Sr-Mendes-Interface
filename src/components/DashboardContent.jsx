@@ -183,7 +183,7 @@ const DashboardContent = () => {
               R$ {agendamentosHoje
                 .filter(a => a.status === 'Confirmado' && a.preco)
                 .reduce((total, a) => total + parseFloat(a.preco || 0), 0)
-                .toFixed(2)}
+                .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               faturamento hoje
