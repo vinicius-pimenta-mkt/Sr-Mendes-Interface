@@ -180,9 +180,9 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              R$ {agendamentosHoje
+              R$ {(agendamentosHoje
                 .filter(a => a.status === 'Confirmado' && a.preco)
-                .reduce((total, a) => total + parseFloat(a.preco || 0), 0)
+                .reduce((total, a) => total + parseFloat(a.preco || 0), 0) / 100)
                 .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-600 mt-1">
