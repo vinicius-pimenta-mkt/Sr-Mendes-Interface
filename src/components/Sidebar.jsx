@@ -51,7 +51,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
         {/* Header */}
         <div className="p-6 border-b">
           <div className="flex items-center space-x-3">
-            <img src={logo} alt="Sr. Mendes Barbearia" className="h-10 w-auto" />
+            <img src={logo} alt="Beleza Masculina Barbearia" className="h-10 w-auto" />
             <div>
               <h2 className="font-bold text-gray-900">Beleza Masculina</h2>
               <p className="text-sm text-gray-600">Barbearia</p>
