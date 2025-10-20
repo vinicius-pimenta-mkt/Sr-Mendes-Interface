@@ -69,11 +69,11 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <img src={logo} alt="Sr. Mendes Barbearia" className="h-20 w-auto" />
+            <img src={logo} alt="Beleza Masculina Barbearia" className="h-20 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
             <Scissors className="h-6 w-6 text-amber-600" />
-            Sr. Mendes Barbearia
+            Beleza Masculina Barbearia
           </CardTitle>
           <p className="text-gray-600">Painel Administrativo</p>
         </CardHeader>
