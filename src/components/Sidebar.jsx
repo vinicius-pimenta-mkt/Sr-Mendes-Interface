@@ -53,7 +53,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
           <div className="flex items-center space-x-3">
             <img src={logo} alt="Sr. Mendes Barbearia" className="h-10 w-auto" />
             <div>
-              <h2 className="font-bold text-gray-900">Sr. Mendes</h2>
+              <h2 className="font-bold text-gray-900">Beleza Masculina</h2>
               <p className="text-sm text-gray-600">Barbearia</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
               <span className="text-amber-600 font-semibold text-sm">SM</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Sr. Mendes</p>
+              <p className="text-sm font-medium text-gray-900">Beleza Masculina</p>
               <p className="text-xs text-gray-600">Administrador</p>
             </div>
           </div>
