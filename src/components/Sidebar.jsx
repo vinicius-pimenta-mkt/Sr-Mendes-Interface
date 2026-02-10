@@ -5,8 +5,7 @@ import {
   Users, 
   LogOut,
   Menu,
-  X,
-  DollarSign // Importar o ícone para Planos
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -20,7 +19,6 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'relatorios', label: 'Relatórios', icon: FileText },
     { id: 'clientes', label: 'Clientes', icon: Users },
-    { id: 'planos', label: 'Planos', icon: DollarSign },
   ];
 
   const handleMenuItemClick = (itemId) => {
