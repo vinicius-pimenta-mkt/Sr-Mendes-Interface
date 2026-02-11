@@ -33,17 +33,14 @@ import {
   CheckCircle,
   AlertCircle,
   CalendarDays,
-  Filter,
-  User
+  Filter
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Agenda = () => {
-  const [agendamentosLucas, setAgendamentosLucas] = useState([]);
-  const [agendamentosYuri, setAgendamentosYuri] = useState([]);
-  const [filtradosLucas, setFiltradosLucas] = useState([]);
-  const [filtradosYuri, setFiltradosYuri] = useState([]);
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState(null);
@@ -57,39 +54,51 @@ const Agenda = () => {
     status: 'Pendente',
     preco: '',
     observacoes: '',
-    barbeiro: 'Lucas'
+    barber: 'Lucas'
   });
 
   const servicos = [
-    'Corte',
-    'Barba',
-    'Corte e Barba',
     'Sobrancelha',
-    'Corte e Sobrancelha',
-    'Corte, Barba e Sobrancelha'
+    'Selagem',
+    'Relaxamento',
+    'Pigmentação',
+    'Acabamento (Pezinho)',
+    'Luzes',
+    'Limpeza de pele',
+    'Hidratação',
+    'Finalização penteado',
+    'Corte+ Sobrancelha',
+    'Corte Masculino',
+    'Raspar na maquina',
+    'Corte infantil no carrinho',
+    'Corte infantil',
+    'Corte + Barba simples',
+    'Combo Corte + Barboterapia',
+    'Combo Corte + Barba + Sobrancelha',
+    'Coloração',
+    'Barboterapia',
+    'Barba Simples',
+    'Tratamento V.O'
   ];
 
   useEffect(() => {
-    fetchAllAgendamentos();
+    fetchAgendamentos();
   }, []);
 
   useEffect(() => {
-    filtrarTudo();
-  }, [agendamentosLucas, agendamentosYuri, selectedDate]);
+    filtrarAgendamentos();
+  }, [agendamentos, selectedDate]);
 
-  const fetchAllAgendamentos = async () => {
-    setLoading(true);
+  const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const headers = { 'Authorization': `Bearer ${token}` };
-      
-      const [resLucas, resYuri] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, { headers }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, { headers })
-      ]);
-
-      if (resLucas.ok) setAgendamentosLucas(await resLucas.json());
-      if (resYuri.ok) setAgendamentosYuri(await resYuri.json());
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAgendamentos(data);
+      }
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
     } finally {
@@ -97,30 +106,37 @@ const Agenda = () => {
     }
   };
 
-  const filtrarTudo = () => {
+  const filtrarAgendamentos = () => {
     if (!selectedDate) {
-      setFiltradosLucas(agendamentosLucas);
-      setFiltradosYuri(agendamentosYuri);
+      setAgendamentosFiltrados(agendamentos);
       return;
     }
     const dataFiltro = format(selectedDate, 'yyyy-MM-dd');
-    setFiltradosLucas(agendamentosLucas.filter(a => a.data === dataFiltro));
-    setFiltradosYuri(agendamentosYuri.filter(a => a.data === dataFiltro));
+    setAgendamentosFiltrados(
+      agendamentos.filter(a => a.data === dataFiltro)
+    );
+  };
+
+  const limparFiltro = () => {
+    setSelectedDate(null);
+    setCalendarOpen(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const isYuri = formData.barbeiro === 'Yuri';
-      const endpoint = isYuri ? '/api/agendamentos-yuri' : '/api/agendamentos';
-      
       const url = editingAgendamento
-        ? `${import.meta.env.VITE_API_BASE_URL}${endpoint}/${editingAgendamento.id}`
-        : `${import.meta.env.VITE_API_BASE_URL}${endpoint}`;
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${editingAgendamento.id}`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
       const method = editingAgendamento ? 'PUT' : 'POST';
-      const precoEmCentavos = formData.preco ? Math.round(parseFloat(formData.preco) * 100) : null;
+
+      // envia em centavos
+      const precoEmCentavos = formData.preco
+        ? Math.round(parseFloat(formData.preco) * 100)
+        : null;
+
       const payload = { ...formData, preco: precoEmCentavos };
 
       const response = await fetch(url, {
@@ -133,7 +149,7 @@ const Agenda = () => {
       });
 
       if (response.ok) {
-        fetchAllAgendamentos();
+        fetchAgendamentos();
         setDialogOpen(false);
         resetForm();
       }
@@ -142,16 +158,15 @@ const Agenda = () => {
     }
   };
 
-  const handleDelete = async (id, barbeiro) => {
+  const handleDelete = async (id) => {
     if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
     try {
       const token = localStorage.getItem('token');
-      const endpoint = barbeiro === 'Yuri' ? '/api/agendamentos-yuri' : '/api/agendamentos';
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${endpoint}/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (response.ok) fetchAllAgendamentos();
+      if (response.ok) fetchAgendamentos();
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
     }
@@ -166,23 +181,42 @@ const Agenda = () => {
       status: 'Pendente',
       preco: '',
       observacoes: '',
-      barbeiro: 'Lucas'
+      barber: 'Lucas'
     });
     setEditingAgendamento(null);
   };
 
-  const openEditDialog = (agendamento, barbeiro) => {
+  // ---- FORMATAÇÃO DE PREÇO ----
+  const formatPreco = (precoRaw) => {
+    if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '';
+    if (typeof precoRaw === 'string') {
+      const s = precoRaw.trim();
+      if (/R\$/.test(s) || /,/.test(s)) {
+        const n = parseFloat(s.replace(/R\$|\s/g, '').replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(n)) return n.toFixed(2);
+      }
+      const asNum = parseFloat(s);
+      if (!isNaN(asNum)) return asNum >= 1000 ? (asNum / 100).toFixed(2) : asNum.toFixed(2);
+      return '';
+    }
+    if (typeof precoRaw === 'number') {
+      return precoRaw >= 1000 ? (precoRaw / 100).toFixed(2) : precoRaw.toFixed(2);
+    }
+    return '';
+  };
+
+  const openEditDialog = (agendamento) => {
     setEditingAgendamento(agendamento);
-    const precoFormatado = agendamento.preco ? (agendamento.preco / 100).toFixed(2) : '';
+    const precoFormatado = formatPreco(agendamento?.preco);
     setFormData({
-      cliente_nome: agendamento.cliente_nome,
-      servico: agendamento.servico,
-      data: agendamento.data,
-      hora: agendamento.hora,
-      status: agendamento.status,
-      preco: precoFormatado,
-      observacoes: agendamento.observacoes || '',
-      barbeiro: barbeiro
+      cliente_nome: agendamento?.cliente_nome ?? '',
+      servico: agendamento?.servico ?? '',
+      data: agendamento?.data ?? '',
+      hora: agendamento?.hora ?? '',
+      status: agendamento?.status ?? 'Pendente',
+      preco: precoFormatado ? precoFormatado : '',
+      observacoes: agendamento?.observacoes ?? '',
+      barber: agendamento?.barber ?? 'Lucas'
     });
     setDialogOpen(true);
   };
@@ -196,70 +230,14 @@ const Agenda = () => {
     }
   };
 
-  const renderTabela = (lista, titulo, corDestaque, barbeiroNome) => (
-    <Card className={`border-t-4 ${corDestaque}`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium flex items-center">
-          <User className="h-5 w-5 mr-2" />
-          Agenda do {barbeiroNome}
-        </CardTitle>
-        <Badge variant="outline" className="font-normal">
-          {lista.length} agendamentos
-        </Badge>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr>
-                <th className="px-4 py-3">Horário</th>
-                <th className="px-4 py-3">Cliente</th>
-                <th className="px-4 py-3">Serviço</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {lista.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
-                    Nenhum agendamento encontrado para esta data.
-                  </td>
-                </tr>
-              ) : (
-                lista.map((a) => (
-                  <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      <div className="flex items-center">
-                        <Clock className="h-3 w-3 mr-1 text-gray-400" />
-                        {a.hora.substring(0, 5)}
-                      </div>
-                      <div className="text-xs text-gray-400">{format(new Date(a.data + 'T12:00:00'), 'dd/MM/yyyy')}</div>
-                    </td>
-                    <td className="px-4 py-3">{a.cliente_nome}</td>
-                    <td className="px-4 py-3">{a.servico}</td>
-                    <td className="px-4 py-3">
-                      <Badge className={`${getStatusColor(a.status)} border-none font-normal`}>
-                        {a.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(a, barbeiroNome)}>
-                        <Edit className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id, barbeiroNome)}>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
+      case 'Pendente':   return <Clock className="h-4 w-4" />;
+      case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
+      default:           return <Clock className="h-4 w-4" />;
+    }
+  };
 
   if (loading) {
     return (
@@ -271,118 +249,243 @@ const Agenda = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agendamentos</h1>
-          <p className="text-gray-600">Visualize e gerencie os horários de todos os barbeiros</p>
+          <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
+          <p className="text-gray-600">Gerencie os agendamentos da barbearia</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={selectedDate ? "border-amber-600 text-amber-600" : ""}>
-                <CalendarDays className="h-4 w-4 mr-2" />
-                {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : "Filtrar por Data"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  setSelectedDate(date);
-                  setCalendarOpen(false);
-                }}
-                locale={ptBR}
-                initialFocus
-              />
-              {selectedDate && (
-                <div className="p-2 border-t border-gray-100">
-                  <Button variant="ghost" className="w-full text-xs" onClick={() => setSelectedDate(null)}>
-                    Limpar Filtro
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm} className="bg-amber-600 hover:bg-amber-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Agendamento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                {editingAgendamento ? "Editar Agendamento" : "Novo Agendamento"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="cliente_nome">Nome do Cliente</Label>
+                <Input
+                  id="cliente_nome"
+                  value={formData.cliente_nome}
+                  onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
+                  required
+                />
+              </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm} className="bg-amber-600 hover:bg-amber-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Agendamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{editingAgendamento ? "Editar Agendamento" : "Novo Agendamento"}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="servico">Serviço</Label>
+                <Select value={formData.servico} onValueChange={(value) => setFormData({...formData, servico: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servicos.map((servico) => (
+                      <SelectItem key={servico} value={servico}>
+                        {servico}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="barbeiro">Barbeiro</Label>
-                  <Select 
-                    value={formData.barbeiro} 
-                    onValueChange={(v) => setFormData({...formData, barbeiro: v})}
-                    disabled={!!editingAgendamento}
-                  >
+                  <Label htmlFor="data">Data</Label>
+                  <Input
+                    id="data"
+                    type="date"
+                    value={formData.data}
+                    onChange={(e) => setFormData({...formData, data: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hora">Hora</Label>
+                  <Input
+                    id="hora"
+                    type="time"
+                    value={formData.hora}
+                    onChange={(e) => setFormData({...formData, hora: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="barber">Barbeiro</Label>
+                  <Select value={formData.barber} onValueChange={(value) => setFormData({...formData, barber: value})}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione o barbeiro" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Lucas">Lucas</SelectItem>
-                      <SelectItem value="Yuri">Yuri</SelectItem>
+                      <SelectItem value="Turi">Turi</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="cliente_nome">Nome do Cliente</Label>
-                  <Input id="cliente_nome" value={formData.cliente_nome} onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="servico">Serviço</Label>
-                  <Select value={formData.servico} onValueChange={(v) => setFormData({...formData, servico: v})}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
-                    <SelectContent>{servicos.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      <SelectItem value="Confirmado">Confirmado</SelectItem>
+                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="data">Data</Label>
-                    <Input id="data" type="date" value={formData.data} onChange={(e) => setFormData({...formData, data: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hora">Hora</Label>
-                    <Input id="hora" type="time" value={formData.hora} onChange={(e) => setFormData({...formData, hora: e.target.value})} required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="preco">Preço (R$)</Label>
-                    <Input id="preco" type="number" step="0.01" value={formData.preco} onChange={(e) => setFormData({...formData, preco: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                        <SelectItem value="Confirmado">Confirmado</SelectItem>
-                        <SelectItem value="Cancelado">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700">Salvar Agendamento</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="preco">Preço (R$)</Label>
+                <Input
+                  id="preco"
+                  type="text"
+                  placeholder="0,00"
+                  value={formData.preco}
+                  onChange={(e) => setFormData({...formData, preco: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações</Label>
+                <Input
+                  id="observacoes"
+                  value={formData.observacoes}
+                  onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
+                />
+              </div>
+
+              <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700">
+                {editingAgendamento ? "Salvar Alterações" : "Criar Agendamento"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {renderTabela(filtradosLucas, "Agenda do Lucas", "border-t-amber-500", "Lucas")}
-        {renderTabela(filtradosYuri, "Agenda do Yuri", "border-t-green-500", "Yuri")}
-      </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-amber-600" />
+            Próximos Agendamentos
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={selectedDate ? "border-amber-600 text-amber-600" : ""}>
+                  <Filter className="h-4 w-4 mr-2" />
+                  {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : "Filtrar por Data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    setSelectedDate(date);
+                    setCalendarOpen(false);
+                  }}
+                  locale={ptBR}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {selectedDate && (
+              <Button variant="ghost" onClick={limparFiltro} className="text-gray-500">
+                Limpar
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3">Cliente</th>
+                  <th className="px-4 py-3">Serviço</th>
+                  <th className="px-4 py-3">Data/Hora</th>
+                  <th className="px-4 py-3">Barbeiro</th>
+                  <th className="px-4 py-3">Preço</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {agendamentosFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                      Nenhum agendamento encontrado.
+                    </td>
+                  </tr>
+                ) : (
+                  agendamentosFiltrados.map((agendamento) => (
+                    <tr key={agendamento.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {agendamento.cliente_nome}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {agendamento.servico}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        <div className="flex flex-col">
+                          <span>{format(new Date(agendamento.data + 'T12:00:00'), 'dd/MM/yyyy')}</span>
+                          <span className="text-xs text-gray-400">{agendamento.hora}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {agendamento.barber || 'Lucas'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 font-semibold">
+                        R$ {formatPreco(agendamento.preco)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={getStatusColor(agendamento.status)}>
+                          <span className="flex items-center gap-1">
+                            {getStatusIcon(agendamento.status)}
+                            {agendamento.status}
+                          </span>
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(agendamento)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(agendamento.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
