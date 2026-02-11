@@ -51,59 +51,35 @@ const DashboardContent = () => {
   const fetchAgendamentosHoje = async () => {
     try {
       const token = localStorage.getItem('token');
-      
-      // Buscar agendamentos do Lucas
-      const responseLucas = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` },
       });
 
-      // Buscar agendamentos do Yuri
-      const responseYuri = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      let todosAgendamentos = [];
-
-      if (responseLucas.ok) {
-        const dataLucas = await responseLucas.json();
-        todosAgendamentos = [...dataLucas.map(a => ({ ...a, barbeiro: 'lucas' }))];
+      if (response.ok) {
+        const data = await response.json();
+        
+        // O backend agora já retorna os agendamentos unificados e ordenados
+        const agendamentos = data.agendamentos.map(a => ({
+          ...a,
+          barbeiro: a.barber // Normaliza para o nome esperado no componente
+        }));
+        
+        setAgendamentosHoje(agendamentos);
+        
+        // Calcular serviços do dia a partir dos agendamentos retornados
+        const servicosContagem = {};
+        agendamentos.forEach(agendamento => {
+          if (agendamento.servico && agendamento.status !== 'Cancelado') {
+            servicosContagem[agendamento.servico] = (servicosContagem[agendamento.servico] || 0) + 1;
+          }
+        });
+        
+        const servicosArray = Object.entries(servicosContagem)
+          .map(([nome, quantidade]) => ({ nome, quantidade }))
+          .sort((a, b) => b.quantidade - a.quantidade);
+        
+        setServicosDoDia(servicosArray);
       }
-
-      if (responseYuri.ok) {
-        const dataYuri = await responseYuri.json();
-        todosAgendamentos = [...todosAgendamentos, ...dataYuri.map(a => ({ ...a, barbeiro: 'yuri' }))];
-      }
-
-      const hoje = new Date().toISOString().split('T')[0];
-      
-      // Filtrar agendamentos de hoje
-      const agendamentosDeHoje = todosAgendamentos.filter(agendamento => 
-        agendamento.data === hoje
-      );
-      
-      // Ordenar por horário
-      agendamentosDeHoje.sort((a, b) => a.hora.localeCompare(b.hora));
-      
-      setAgendamentosHoje(agendamentosDeHoje);
-      
-      // Calcular serviços do dia
-      const servicosContagem = {};
-      agendamentosDeHoje.forEach(agendamento => {
-        if (agendamento.servico) {
-          servicosContagem[agendamento.servico] = (servicosContagem[agendamento.servico] || 0) + 1;
-        }
-      });
-      
-      // Converter para array ordenado
-      const servicosArray = Object.entries(servicosContagem)
-        .map(([nome, quantidade]) => ({ nome, quantidade }))
-        .sort((a, b) => b.quantidade - a.quantidade);
-      
-      setServicosDoDia(servicosArray);
     } catch (error) {
       console.error('Erro ao carregar agendamentos de hoje:', error);
     } finally {
@@ -149,7 +125,7 @@ const DashboardContent = () => {
   };
 
   const getBarbeiroColor = (barbeiro) => {
-    return barbeiro === 'yuri' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600';
+    return barbeiro === 'Yuri' || barbeiro === 'yuri' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600';
   };
 
   if (loading) {
@@ -278,7 +254,7 @@ const DashboardContent = () => {
                             <p className="font-medium text-gray-900">{agendamento.cliente_nome}</p>
                             <p className="text-sm text-gray-600">{agendamento.servico}</p>
                             <p className="text-xs text-gray-500">
-                              {agendamento.barbeiro === 'yuri' ? 'Barbeiro: Yuri' : 'Barbeiro: Lucas'}
+                              {(agendamento.barbeiro === 'Yuri' || agendamento.barbeiro === 'yuri') ? 'Barbeiro: Yuri' : 'Barbeiro: Lucas'}
                             </p>
                           </div>
                         </div>
