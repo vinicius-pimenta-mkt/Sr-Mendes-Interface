@@ -61,27 +61,12 @@ const Agenda = () => {
   });
 
   const servicos = [
+    'Corte',
+    'Barba',
+    'Corte e Barba',
     'Sobrancelha',
-    'Selagem',
-    'Relaxamento',
-    'Pigmentação',
-    'Acabamento (Pezinho)',
-    'Luzes',
-    'Limpeza de pele',
-    'Hidratação',
-    'Finalização penteado',
-    'CORTE+ SOBRANCELHA',
-    'Corte Masculino',
-    'Raspar na maquina',
-    'Corte infantil no carrinho',
-    'corte infantil',
-    'CORTE + BARBA SIMPLES',
-    'COMBO CORTE+BARBOTERAPIA',
-    'COMBO CORTE+BARBA + SOBRANCELHA',
-    'Coloração',
-    'Barboterapia',
-    'Barba Simples',
-    'Tratamento V.O'
+    'Corte e Sobrancelha',
+    'Corte, Barba e Sobrancelha'
   ];
 
   useEffect(() => {
