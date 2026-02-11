@@ -33,6 +33,7 @@ const Relatorios = () => {
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
+  const [agendamentosPeriodo, setAgendamentosPeriodo] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,6 +73,11 @@ const Relatorios = () => {
             setReceitaTempos(data.receita_detalhada);
           }
 
+          // Agendamentos detalhados para a aba Receita
+          if (data.agendamentos && Array.isArray(data.agendamentos)) {
+            setAgendamentosPeriodo(data.agendamentos);
+          }
+
           if (Array.isArray(data.top_clients)) {
             setFrequenciaClientes(
               data.top_clients.map(c => ({
@@ -95,7 +101,7 @@ const Relatorios = () => {
 
   const CORES_GRAFICO = [
     "#FFD700", // amarelo (Lucas/Mendes)
-    "#4CAF50", // verde (Turi)
+    "#4CAF50", // verde (Yuri)
     "#1A1A1A", 
     "#333333", 
     "#FFA500", 
@@ -194,11 +200,11 @@ const Relatorios = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <BarChart3 className="h-5 w-5 text-amber-600" />
-                Serviços por Barbeiro
+                Serviços
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[600px] w-full">
+              <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     layout="vertical"
@@ -216,42 +222,71 @@ const Relatorios = () => {
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[0, 4, 4, 0]} />
-                    <Bar name="Turi" dataKey="turi_qty" fill="#4CAF50" radius={[0, 4, 4, 0]} />
+                    <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
 
-          {/* Ranking Detalhado */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Ranking Detalhado de Serviços</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {servicosMaisVendidos.map((servico, index) => (
-                  <div key={servico.service} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600">
-                        {index + 1}
+          {/* Ranking Detalhado - Dividido em 2 colunas no PC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Serviços (Parte 1)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {servicosMaisVendidos.slice(0, Math.ceil(servicosMaisVendidos.length / 2)).map((servico, index) => (
+                    <div key={servico.service} className="flex items-center justify-between p-3 border rounded-lg gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600 text-xs">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 text-sm">{servico.service}</h3>
+                          <p className="text-[10px] text-gray-500">
+                            Total: {servico.total_qty} (L: {servico.lucas_qty} | Y: {servico.yuri_qty})
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{servico.service}</h3>
-                        <p className="text-sm text-gray-500">
-                          Total: {servico.total_qty} (Lucas: {servico.lucas_qty} | Turi: {servico.turi_qty})
-                        </p>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900 text-sm">R$ {servico.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                     </div>
-                    <div className="text-left sm:text-right">
-                      <p className="font-bold text-gray-900">R$ {servico.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      <p className="text-sm text-gray-500">receita total</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Serviços (Parte 2)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {servicosMaisVendidos.slice(Math.ceil(servicosMaisVendidos.length / 2)).map((servico, index) => (
+                    <div key={servico.service} className="flex items-center justify-between p-3 border rounded-lg gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600 text-xs">
+                          {index + 1 + Math.ceil(servicosMaisVendidos.length / 2)}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 text-sm">{servico.service}</h3>
+                          <p className="text-[10px] text-gray-500">
+                            Total: {servico.total_qty} (L: {servico.lucas_qty} | Y: {servico.yuri_qty})
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900 text-sm">R$ {servico.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* --- RECEITA --- */}
@@ -280,6 +315,48 @@ const Relatorios = () => {
                   />
                 </LineChart>
               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Lista de Serviços Prestados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3">Profissional</th>
+                      <th className="px-4 py-3">Data/Hora</th>
+                      <th className="px-4 py-3">Serviço</th>
+                      <th className="px-4 py-3">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {agendamentosPeriodo.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                          Nenhum serviço encontrado no período.
+                        </td>
+                      </tr>
+                    ) : (
+                      agendamentosPeriodo.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900">{item.barber}</td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {format(new Date(item.data + 'T12:00:00'), 'dd/MM/yyyy')} - {item.hora}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{item.servico}</td>
+                          <td className="px-4 py-3 font-bold text-gray-900">
+                            R$ {(item.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
