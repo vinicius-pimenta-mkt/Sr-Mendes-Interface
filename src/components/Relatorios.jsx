@@ -23,13 +23,15 @@ import {
   TrendingUp,
   Users,
   Download,
-  Calendar
+  Calendar,
+  Filter
 } from "lucide-react";
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Relatorios = () => {
   const [periodo, setPeriodo] = useState("mes");
+  const [barbeiro, setBarbeiro] = useState("geral");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
@@ -40,9 +42,8 @@ const Relatorios = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        let apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo`;
+        
         let params = `?periodo=${periodo}`;
-
         const today = format(new Date(), 'yyyy-MM-dd');
         const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
@@ -51,51 +52,164 @@ const Relatorios = () => {
         } else if (periodo === 'ontem') {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         } else {
-          // Para outros períodos, enviar o parâmetro período
           params = `?periodo=${periodo}`;
         }
 
-        const response = await fetch(apiUrl + params, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
+        let dataLucas = null;
+        let dataYuri = null;
 
-        if (response.ok) {
-          const data = await response.json();
-
-          // Processar serviços mais vendidos - agora incluindo todos os serviços
-          const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
-          const servicosCompletos = apiServicos.map(s => ({
-            nome: s.service,
-            quantidade: s.qty,
-            receita: s.revenue
-          })).sort((a, b) => b.quantidade - a.quantidade); // Ordenar por quantidade
-          setServicosMaisVendidos(servicosCompletos);
-
-          // Processar dados de receita detalhada
-          if (data.receita_detalhada && Array.isArray(data.receita_detalhada)) {
-            setReceitaTempos(data.receita_detalhada);
-          } else if (data.totals) {
-            // Fallback para a estrutura antiga
-            setReceitaTempos([
-              { periodo: "Hoje", valor: data.totals.daily || 0 },
-              { periodo: "Semana", valor: data.totals.weekly || 0 },
-              { periodo: "Mês", valor: data.totals.monthly || 0 }
-            ]);
+        // Buscar dados do Lucas
+        if (barbeiro === 'geral' || barbeiro === 'lucas') {
+          const apiUrlLucas = `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo`;
+          const responseLucas = await fetch(apiUrlLucas + params, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+          if (responseLucas.ok) {
+            dataLucas = await responseLucas.json();
           }
+        }
 
-          if (Array.isArray(data.top_clients)) {
-            setFrequenciaClientes(
-              data.top_clients.map(c => ({
+        // Buscar dados do Yuri
+        if (barbeiro === 'geral' || barbeiro === 'yuri') {
+          const apiUrlYuri = `${import.meta.env.VITE_API_BASE_URL}/api/relatorios-yuri/resumo`;
+          const responseYuri = await fetch(apiUrlYuri + params, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+          if (responseYuri.ok) {
+            dataYuri = await responseYuri.json();
+          }
+        }
+
+        // Combinar dados se for "geral"
+        if (barbeiro === 'geral' && dataLucas && dataYuri) {
+          // Combinar serviços
+          const servicosMap = new Map();
+          
+          dataLucas.by_service.forEach(s => {
+            servicosMap.set(s.service, {
+              nome: s.service,
+              quantidade: s.qty,
+              receita: s.revenue
+            });
+          });
+
+          dataYuri.by_service.forEach(s => {
+            if (servicosMap.has(s.service)) {
+              const existing = servicosMap.get(s.service);
+              servicosMap.set(s.service, {
+                nome: s.service,
+                quantidade: existing.quantidade + s.qty,
+                receita: existing.receita + s.revenue
+              });
+            } else {
+              servicosMap.set(s.service, {
+                nome: s.service,
+                quantidade: s.qty,
+                receita: s.revenue
+              });
+            }
+          });
+
+          const servicosCombinados = Array.from(servicosMap.values())
+            .sort((a, b) => b.quantidade - a.quantidade);
+          setServicosMaisVendidos(servicosCombinados);
+
+          // Combinar receita detalhada
+          const receitaMap = new Map();
+          dataLucas.receita_detalhada.forEach(r => {
+            receitaMap.set(r.periodo, r.valor);
+          });
+          dataYuri.receita_detalhada.forEach(r => {
+            if (receitaMap.has(r.periodo)) {
+              receitaMap.set(r.periodo, receitaMap.get(r.periodo) + r.valor);
+            } else {
+              receitaMap.set(r.periodo, r.valor);
+            }
+          });
+          const receitaCombinada = Array.from(receitaMap.entries()).map(([periodo, valor]) => ({
+            periodo,
+            valor
+          }));
+          setReceitaTempos(receitaCombinada);
+
+          // Combinar clientes
+          const clientesMap = new Map();
+          dataLucas.top_clients.forEach(c => {
+            clientesMap.set(c.name, {
+              nome: c.name,
+              visitas: c.visits,
+              ultimaVisita: c.last_visit,
+              gasto: c.spent
+            });
+          });
+          dataYuri.top_clients.forEach(c => {
+            if (clientesMap.has(c.name)) {
+              const existing = clientesMap.get(c.name);
+              clientesMap.set(c.name, {
+                nome: c.name,
+                visitas: existing.visitas + c.visits,
+                ultimaVisita: c.last_visit > existing.ultimaVisita ? c.last_visit : existing.ultimaVisita,
+                gasto: existing.gasto + c.spent
+              });
+            } else {
+              clientesMap.set(c.name, {
                 nome: c.name,
                 visitas: c.visits,
                 ultimaVisita: c.last_visit,
                 gasto: c.spent
-              }))
-            );
-          }
+              });
+            }
+          });
+          const clientesCombinados = Array.from(clientesMap.values())
+            .sort((a, b) => b.visitas - a.visitas)
+            .slice(0, 10);
+          setFrequenciaClientes(clientesCombinados);
+
+        } else if (barbeiro === 'lucas' && dataLucas) {
+          // Apenas dados do Lucas
+          const servicosCompletos = dataLucas.by_service.map(s => ({
+            nome: s.service,
+            quantidade: s.qty,
+            receita: s.revenue
+          })).sort((a, b) => b.quantidade - a.quantidade);
+          setServicosMaisVendidos(servicosCompletos);
+
+          setReceitaTempos(dataLucas.receita_detalhada || []);
+
+          setFrequenciaClientes(
+            dataLucas.top_clients.map(c => ({
+              nome: c.name,
+              visitas: c.visits,
+              ultimaVisita: c.last_visit,
+              gasto: c.spent
+            }))
+          );
+
+        } else if (barbeiro === 'yuri' && dataYuri) {
+          // Apenas dados do Yuri
+          const servicosCompletos = dataYuri.by_service.map(s => ({
+            nome: s.service,
+            quantidade: s.qty,
+            receita: s.revenue
+          })).sort((a, b) => b.quantidade - a.quantidade);
+          setServicosMaisVendidos(servicosCompletos);
+
+          setReceitaTempos(dataYuri.receita_detalhada || []);
+
+          setFrequenciaClientes(
+            dataYuri.top_clients.map(c => ({
+              nome: c.name,
+              visitas: c.visits,
+              ultimaVisita: c.last_visit,
+              gasto: c.spent
+            }))
+          );
         }
+
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
       } finally {
@@ -104,7 +218,7 @@ const Relatorios = () => {
     };
 
     fetchData();
-  }, [periodo]);
+  }, [periodo, barbeiro]);
 
   const CORES_GRAFICO = [
     "#FFD700", // amarelo mais vibrante
@@ -186,29 +300,50 @@ const Relatorios = () => {
         </Button>
       </div>
 
-      {/* Filtro de Período */}
+      {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Calendar className="h-5 w-5 text-amber-600" />
-            <label className="text-sm font-medium text-gray-700">
-              Período dos Relatórios:
-            </label>
-            <Select value={periodo} onValueChange={setPeriodo}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Selecione o período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hoje">Hoje</SelectItem>
-                <SelectItem value="ontem">Ontem</SelectItem>
-                <SelectItem value="semana">Última Semana</SelectItem>
-                <SelectItem value="ultimos15dias">Últimos 15 Dias</SelectItem>
-                <SelectItem value="mes">Último Mês</SelectItem>
-                <SelectItem value="trimestre">Último Trimestre</SelectItem>
-                <SelectItem value="semestre">Último Semestre</SelectItem>
-                <SelectItem value="ano">Último Ano</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* Filtro de Barbeiro */}
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <Filter className="h-5 w-5 text-amber-600" />
+              <label className="text-sm font-medium text-gray-700">
+                Barbeiro:
+              </label>
+              <Select value={barbeiro} onValueChange={setBarbeiro}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Selecione o barbeiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="geral">Geral (Todos)</SelectItem>
+                  <SelectItem value="lucas">Lucas</SelectItem>
+                  <SelectItem value="yuri">Yuri</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro de Período */}
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <Calendar className="h-5 w-5 text-amber-600" />
+              <label className="text-sm font-medium text-gray-700">
+                Período:
+              </label>
+              <Select value={periodo} onValueChange={setPeriodo}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hoje">Hoje</SelectItem>
+                  <SelectItem value="ontem">Ontem</SelectItem>
+                  <SelectItem value="semana">Última Semana</SelectItem>
+                  <SelectItem value="ultimos15dias">Últimos 15 Dias</SelectItem>
+                  <SelectItem value="mes">Último Mês</SelectItem>
+                  <SelectItem value="trimestre">Último Trimestre</SelectItem>
+                  <SelectItem value="semestre">Último Semestre</SelectItem>
+                  <SelectItem value="ano">Último Ano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -254,7 +389,7 @@ const Relatorios = () => {
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)} // Apenas serviços com quantidade > 0 no gráfico de pizza
+                      data={servicosMaisVendidos.filter(s => s.quantidade > 0)}
                       cx="50%"
                       cy="40%"
                       outerRadius={80}
