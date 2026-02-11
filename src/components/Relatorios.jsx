@@ -23,15 +23,13 @@ import {
   TrendingUp,
   Users,
   Download,
-  Calendar,
-  User
+  Calendar
 } from "lucide-react";
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Relatorios = () => {
   const [periodo, setPeriodo] = useState("mes");
-  const [barbeiro, setBarbeiro] = useState("geral");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
@@ -42,77 +40,49 @@ const Relatorios = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const headers = { "Authorization": `Bearer ${token}` };
-        
+        let apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo`;
+        let params = `?periodo=${periodo}`;
+
         const today = format(new Date(), 'yyyy-MM-dd');
         const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-        
-        let params = `?periodo=${periodo}`;
-        if (periodo === 'hoje') params = `?data_inicio=${today}&data_fim=${today}`;
-        else if (periodo === 'ontem') params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
 
-        let data;
-        if (barbeiro === 'geral') {
-          // Buscar dados de ambos e somar
-          const [resLucas, resYuri] = await Promise.all([
-            fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/resumo${params}`, { headers }),
-            fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios-yuri/resumo${params}`, { headers })
-          ]);
-          
-          const dataLucas = resLucas.ok ? await resLucas.json() : { by_service: [], receita_detalhada: [], top_clients: [] };
-          const dataYuri = resYuri.ok ? await resYuri.json() : { by_service: [], receita_detalhada: [], top_clients: [] };
-          
-          // Somar serviços
-          const servicosMap = {};
-          [...(dataLucas.by_service || []), ...(dataYuri.by_service || [])].forEach(s => {
-            if (!servicosMap[s.service]) servicosMap[s.service] = { service: s.service, qty: 0, revenue: 0 };
-            servicosMap[s.service].qty += s.qty;
-            servicosMap[s.service].revenue += s.revenue;
-          });
-          
-          // Somar receita por tempo
-          const receitaMap = {};
-          [...(dataLucas.receita_detalhada || []), ...(dataYuri.receita_detalhada || [])].forEach(r => {
-            if (!receitaMap[r.periodo]) receitaMap[r.periodo] = { periodo: r.periodo, valor: 0 };
-            receitaMap[r.periodo].valor += r.valor;
-          });
-
-          // Combinar top clientes
-          const clientesMap = {};
-          [...(dataLucas.top_clients || []), ...(dataYuri.top_clients || [])].forEach(c => {
-            if (!clientesMap[c.name]) clientesMap[c.name] = { name: c.name, visits: 0, spent: 0, last_visit: c.last_visit };
-            clientesMap[c.name].visits += c.visits;
-            clientesMap[c.name].spent += c.spent;
-            if (new Date(c.last_visit) > new Date(clientesMap[c.name].last_visit)) clientesMap[c.name].last_visit = c.last_visit;
-          });
-
-          data = {
-            by_service: Object.values(servicosMap),
-            receita_detalhada: Object.values(receitaMap),
-            top_clients: Object.values(clientesMap).sort((a, b) => b.spent - a.spent).slice(0, 10)
-          };
+        if (periodo === 'hoje') {
+          params = `?data_inicio=${today}&data_fim=${today}`;
+        } else if (periodo === 'ontem') {
+          params = `?data_inicio=${yesterday}&data_fim=${yesterday}`;
         } else {
-          const endpoint = barbeiro === 'yuri' ? '/api/relatorios-yuri/resumo' : '/api/relatorios/resumo';
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${endpoint}${params}`, { headers });
-          data = await res.json();
+          params = `?periodo=${periodo}`;
         }
 
-        // Atualizar estados
-        setServicosMaisVendidos((data.by_service || []).map(s => ({
-          nome: s.service,
-          quantidade: s.qty,
-          receita: s.revenue
-        })).sort((a, b) => b.quantidade - a.quantidade));
-        
-        setReceitaTempos(data.receita_detalhada || []);
-        
-        setFrequenciaClientes((data.top_clients || []).map(c => ({
-          nome: c.name,
-          visitas: c.visits,
-          ultimaVisita: c.last_visit,
-          gasto: c.spent
-        })));
+        const response = await fetch(apiUrl + params, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+
+          // Processar serviços mais vendidos - agora com dados por barbeiro
+          const apiServicos = Array.isArray(data.by_service) ? data.by_service : [];
+          setServicosMaisVendidos(apiServicos);
+
+          // Processar dados de receita detalhada
+          if (data.receita_detalhada && Array.isArray(data.receita_detalhada)) {
+            setReceitaTempos(data.receita_detalhada);
+          }
+
+          if (Array.isArray(data.top_clients)) {
+            setFrequenciaClientes(
+              data.top_clients.map(c => ({
+                nome: c.name,
+                visitas: c.visits,
+                ultimaVisita: c.last_visit,
+                gasto: c.spent
+              }))
+            );
+          }
+        }
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
       } finally {
@@ -121,54 +91,79 @@ const Relatorios = () => {
     };
 
     fetchData();
-  }, [periodo, barbeiro]);
+  }, [periodo]);
 
-  const CORES_GRAFICO = ["#FFD700", "#1A1A1A", "#333333", "#FFA500", "#000000", "#FFFF00"];
+  const CORES_GRAFICO = [
+    "#FFD700", // amarelo (Lucas/Mendes)
+    "#4CAF50", // verde (Turi)
+    "#1A1A1A", 
+    "#333333", 
+    "#FFA500", 
+    "#000000"
+  ];
+
+  const exportarRelatorio = () => {
+    window.print();
+  };
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{payload[0].payload.service}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Relatórios</h1>
-          <p className="text-gray-600">Análise de desempenho (Apenas dados até hoje)</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Relatórios</h1>
+          <p className="text-gray-600">
+            Análise de desempenho e estatísticas da barbearia
+          </p>
         </div>
-        <Button onClick={() => window.print()} variant="outline" className="bg-amber-600 hover:bg-amber-700 text-white">
-          <Download className="h-4 w-4 mr-2" /> Exportar
+        <Button
+          onClick={exportarRelatorio}
+          variant="outline"
+          className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Exportar Relatório
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="pt-6 flex items-center gap-4">
-            <User className="h-5 w-5 text-amber-600" />
-            <label className="text-sm font-medium">Barbeiro:</label>
-            <Select value={barbeiro} onValueChange={setBarbeiro}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="geral">Geral (Todos)</SelectItem>
-                <SelectItem value="lucas">Lucas</SelectItem>
-                <SelectItem value="yuri">Yuri</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 flex items-center gap-4">
+      {/* Filtro de Período */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
             <Calendar className="h-5 w-5 text-amber-600" />
-            <label className="text-sm font-medium">Período:</label>
+            <label className="text-sm font-medium text-gray-700">
+              Período dos Relatórios:
+            </label>
             <Select value={periodo} onValueChange={setPeriodo}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Selecione o período" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="hoje">Hoje</SelectItem>
@@ -177,12 +172,15 @@ const Relatorios = () => {
                 <SelectItem value="ultimos15dias">Últimos 15 Dias</SelectItem>
                 <SelectItem value="mes">Último Mês</SelectItem>
                 <SelectItem value="trimestre">Último Trimestre</SelectItem>
+                <SelectItem value="semestre">Último Semestre</SelectItem>
+                <SelectItem value="ano">Último Ano</SelectItem>
               </SelectContent>
             </Select>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Tabs */}
       <Tabs defaultValue="servicos" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
@@ -190,77 +188,133 @@ const Relatorios = () => {
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
         </TabsList>
 
+        {/* --- SERVIÇOS --- */}
         <TabsContent value="servicos" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Serviços Mais Vendidos</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={servicosMaisVendidos}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <BarChart3 className="h-5 w-5 text-amber-600" />
+                Serviços por Barbeiro
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[600px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    layout="vertical"
+                    data={servicosMaisVendidos}
+                    margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="nome" tick={{fontSize: 10}} interval={0} angle={-45} textAnchor="end" height={80} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="quantidade" fill="#FFC107" />
+                    <XAxis type="number" />
+                    <YAxis 
+                      dataKey="service" 
+                      type="category" 
+                      tick={{ fontSize: 12 }}
+                      width={100}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[0, 4, 4, 0]} />
+                    <Bar name="Turi" dataKey="turi_qty" fill="#4CAF50" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Distribuição</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie data={servicosMaisVendidos.filter(s => s.quantidade > 0)} cx="50%" cy="50%" outerRadius={80} dataKey="quantidade" nameKey="nome">
-                      {servicosMaisVendidos.map((_, i) => <Cell key={i} fill={CORES_GRAFICO[i % CORES_GRAFICO.length]} />)}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ranking Detalhado */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Ranking Detalhado de Serviços</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {servicosMaisVendidos.map((servico, index) => (
+                  <div key={servico.service} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{servico.service}</h3>
+                        <p className="text-sm text-gray-500">
+                          Total: {servico.total_qty} (Lucas: {servico.lucas_qty} | Turi: {servico.turi_qty})
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-bold text-gray-900">R$ {servico.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-sm text-gray-500">receita total</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="receita">
+        {/* --- RECEITA --- */}
+        <TabsContent value="receita" className="space-y-6">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Evolução da Receita (R$)</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <TrendingUp className="h-5 w-5 text-amber-600" />
+                Evolução da Receita
+              </CardTitle>
+            </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={350}>
                 <LineChart data={receitaTempos}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="periodo" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} />
+                  <YAxis tickFormatter={(value) => `R$ ${value}`} />
+                  <Tooltip formatter={(value) => [`R$ ${value.toFixed(2)}`, "Receita"]} />
+                  <Line
+                    type="monotone"
+                    dataKey="valor"
+                    stroke="#FFC107"
+                    strokeWidth={3}
+                    dot={{ r: 6, fill: "#FFC107" }}
+                    activeDot={{ r: 8 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="clientes">
+        {/* --- CLIENTES --- */}
+        <TabsContent value="clientes" className="space-y-6">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Ranking de Clientes</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Users className="h-5 w-5 text-amber-600" />
+                Frequência de Clientes
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="bg-gray-50">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
                       <th className="px-4 py-3">Cliente</th>
                       <th className="px-4 py-3">Visitas</th>
-                      <th className="px-4 py-3">Total Gasto</th>
                       <th className="px-4 py-3">Última Visita</th>
+                      <th className="px-4 py-3">Total Gasto</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
-                    {frequenciaClientes.map((c, i) => (
-                      <tr key={i}>
-                        <td className="px-4 py-3 font-medium">{c.nome}</td>
-                        <td className="px-4 py-3">{c.visitas}</td>
-                        <td className="px-4 py-3 text-green-600 font-bold">R$ {c.gasto.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-gray-500">{c.ultimaVisita}</td>
+                  <tbody className="divide-y divide-gray-200">
+                    {frequenciaClientes.map((cliente, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{cliente.nome}</td>
+                        <td className="px-4 py-3 text-gray-600">{cliente.visitas}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {format(new Date(cliente.ultimaVisita + 'T12:00:00'), 'dd/MM/yyyy')}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-gray-900">
+                          R$ {cliente.gasto.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
