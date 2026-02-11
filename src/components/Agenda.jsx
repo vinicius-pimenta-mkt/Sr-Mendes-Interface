@@ -39,14 +39,18 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Agenda = () => {
-  const [agendamentos, setAgendamentos] = useState([]);
-  const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
+  const [agendamentosLucas, setAgendamentosLucas] = useState([]);
+  const [agendamentosYuri, setAgendamentosYuri] = useState([]);
+  const [agendamentosLucasFiltrados, setAgendamentosLucasFiltrados] = useState([]);
+  const [agendamentosYuriFiltrados, setAgendamentosYuriFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState(null);
+  const [editingBarbeiro, setEditingBarbeiro] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
+    barbeiro: 'lucas',
     cliente_nome: '',
     servico: '',
     data: '',
@@ -71,17 +75,28 @@ const Agenda = () => {
 
   useEffect(() => {
     filtrarAgendamentos();
-  }, [agendamentos, selectedDate]);
+  }, [agendamentosLucas, agendamentosYuri, selectedDate]);
 
   const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+      
+      // Buscar agendamentos do Lucas
+      const responseLucas = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setAgendamentos(data);
+      if (responseLucas.ok) {
+        const dataLucas = await responseLucas.json();
+        setAgendamentosLucas(dataLucas);
+      }
+
+      // Buscar agendamentos do Yuri
+      const responseYuri = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (responseYuri.ok) {
+        const dataYuri = await responseYuri.json();
+        setAgendamentosYuri(dataYuri);
       }
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
@@ -92,12 +107,16 @@ const Agenda = () => {
 
   const filtrarAgendamentos = () => {
     if (!selectedDate) {
-      setAgendamentosFiltrados(agendamentos);
+      setAgendamentosLucasFiltrados(agendamentosLucas);
+      setAgendamentosYuriFiltrados(agendamentosYuri);
       return;
     }
     const dataFiltro = format(selectedDate, 'yyyy-MM-dd');
-    setAgendamentosFiltrados(
-      agendamentos.filter(a => a.data === dataFiltro)
+    setAgendamentosLucasFiltrados(
+      agendamentosLucas.filter(a => a.data === dataFiltro)
+    );
+    setAgendamentosYuriFiltrados(
+      agendamentosYuri.filter(a => a.data === dataFiltro)
     );
   };
 
@@ -110,9 +129,14 @@ const Agenda = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const url = editingAgendamento
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${editingAgendamento.id}`
+      const barbeiro = formData.barbeiro;
+      const baseUrl = barbeiro === 'yuri' 
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+
+      const url = editingAgendamento
+        ? `${baseUrl}/${editingAgendamento.id}`
+        : baseUrl;
 
       const method = editingAgendamento ? 'PUT' : 'POST';
 
@@ -122,6 +146,7 @@ const Agenda = () => {
         : null;
 
       const payload = { ...formData, preco: precoEmCentavos };
+      delete payload.barbeiro; // Remove barbeiro do payload
 
       const response = await fetch(url, {
         method,
@@ -142,11 +167,15 @@ const Agenda = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, barbeiro) => {
     if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}`, {
+      const baseUrl = barbeiro === 'yuri'
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+      
+      const response = await fetch(`${baseUrl}/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -158,6 +187,7 @@ const Agenda = () => {
 
   const resetForm = () => {
     setFormData({
+      barbeiro: 'lucas',
       cliente_nome: '',
       servico: '',
       data: '',
@@ -167,6 +197,7 @@ const Agenda = () => {
       observacoes: ''
     });
     setEditingAgendamento(null);
+    setEditingBarbeiro(null);
   };
 
   // ---- FORMATAÇÃO DE PREÇO ----
@@ -188,10 +219,12 @@ const Agenda = () => {
     return '';
   };
 
-  const openEditDialog = (agendamento) => {
+  const openEditDialog = (agendamento, barbeiro) => {
     setEditingAgendamento(agendamento);
+    setEditingBarbeiro(barbeiro);
     const precoFormatado = formatPreco(agendamento?.preco);
     setFormData({
+      barbeiro: barbeiro,
       cliente_nome: agendamento?.cliente_nome ?? '',
       servico: agendamento?.servico ?? '',
       data: agendamento?.data ?? '',
@@ -219,6 +252,74 @@ const Agenda = () => {
       case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
       default:           return <Clock className="h-4 w-4" />;
     }
+  };
+
+  const renderAgendamentoCard = (agendamento, barbeiro) => {
+    const bgColor = barbeiro === 'yuri' ? 'bg-green-50' : 'bg-white';
+    const borderColor = barbeiro === 'yuri' ? 'border-green-200' : 'border-gray-200';
+    const avatarBg = barbeiro === 'yuri' ? 'bg-green-100' : 'bg-amber-100';
+    const avatarText = barbeiro === 'yuri' ? 'text-green-600' : 'text-amber-600';
+    const buttonHover = barbeiro === 'yuri' ? 'hover:bg-green-50 hover:border-green-300' : 'hover:bg-amber-50 hover:border-amber-300';
+
+    return (
+      <div
+        key={`${barbeiro}-${agendamento.id}`}
+        className={`flex items-center justify-between p-6 ${bgColor} border ${borderColor} rounded-lg shadow-sm hover:shadow-md transition-shadow`}
+      >
+        <div className="flex items-center space-x-6">
+          <div className={`w-14 h-14 ${avatarBg} rounded-full flex items-center justify-center`}>
+            <span className={`${avatarText} font-bold text-lg`}>
+              {agendamento.cliente_nome?.charAt(0) || "C"}
+            </span>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-bold text-lg text-gray-900">{agendamento.cliente_nome}</h3>
+            <p className="font-semibold text-base text-gray-700">{agendamento.servico}</p>
+            <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-medium text-sm shadow-sm">
+              {new Date(agendamento.data + "T00:00:00").toLocaleDateString("pt-BR")} às {agendamento.hora}
+            </div>
+            {agendamento.observacoes && (
+              <p className="text-sm text-gray-600 italic mt-1">
+                Obs: {agendamento.observacoes}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <div className="text-right space-y-2">
+            <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1`}>
+              {getStatusIcon(agendamento.status)}
+              {agendamento.status}
+            </Badge>
+            {agendamento.preco !== undefined && agendamento.preco !== null && (
+              <p className="text-lg font-bold text-green-600">
+                R$ {formatPreco(agendamento.preco)}
+              </p>
+            )}
+          </div>
+
+          <div className="flex space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openEditDialog(agendamento, barbeiro)}
+              className={buttonHover}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDelete(agendamento.id, barbeiro)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -251,6 +352,23 @@ const Agenda = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="barbeiro">Barbeiro</Label>
+                <Select 
+                  value={formData.barbeiro} 
+                  onValueChange={(value) => setFormData({...formData, barbeiro: value})}
+                  disabled={editingAgendamento !== null}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o barbeiro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lucas">Lucas</SelectItem>
+                    <SelectItem value="yuri">Yuri</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="cliente_nome">Nome do Cliente</Label>
                 <Input
@@ -399,20 +517,21 @@ const Agenda = () => {
 
             <div className="text-sm text-gray-600">
               {selectedDate ? (
-                `Mostrando agendamentos de ${format(selectedDate, "dd/MM/yyyy")} (${agendamentosFiltrados.length})`
+                `Mostrando agendamentos de ${format(selectedDate, "dd/MM/yyyy")}`
               ) : (
-                `Mostrando todos os agendamentos (${agendamentos.length})`
+                `Mostrando todos os agendamentos`
               )}
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Agenda do Lucas */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-amber-600" />
-            Agendamentos
+            Agendamentos - Lucas
             {selectedDate && (
               <span className="text-sm font-normal text-gray-600">
                 - {format(selectedDate, "dd/MM/yyyy")}
@@ -421,7 +540,7 @@ const Agenda = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {agendamentosFiltrados.length === 0 ? (
+          {agendamentosLucasFiltrados.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
               {selectedDate 
                 ? `Nenhum agendamento encontrado para ${format(selectedDate, "dd/MM/yyyy")}`
@@ -430,65 +549,36 @@ const Agenda = () => {
             </p>
           ) : (
             <div className="space-y-4">
-              {agendamentosFiltrados.map((agendamento) => (
-                <div
-                  key={agendamento.id}
-                  className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center space-x-6">
-                    <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
-                      <span className="text-amber-600 font-bold text-lg">
-                        {agendamento.cliente_nome?.charAt(0) || "C"}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="font-bold text-lg text-gray-900">{agendamento.cliente_nome}</h3>
-                      <p className="font-semibold text-base text-gray-700">{agendamento.servico}</p>
-                      <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-medium text-sm shadow-sm">
-                        {new Date(agendamento.data + "T00:00:00").toLocaleDateString("pt-BR")} às {agendamento.hora}
-                      </div>
-                      {agendamento.observacoes && (
-                        <p className="text-sm text-gray-600 italic mt-1">
-                          Obs: {agendamento.observacoes}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+              {agendamentosLucasFiltrados.map((agendamento) => renderAgendamentoCard(agendamento, 'lucas'))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right space-y-2">
-                      <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1`}>
-                        {getStatusIcon(agendamento.status)}
-                        {agendamento.status}
-                      </Badge>
-                      {agendamento.preco !== undefined && agendamento.preco !== null && (
-                        <p className="text-lg font-bold text-green-600">
-                          R$ {formatPreco(agendamento.preco)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditDialog(agendamento)}
-                        className="hover:bg-amber-50 hover:border-amber-300"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(agendamento.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* Agenda do Yuri */}
+      <Card className="border-green-200">
+        <CardHeader className="bg-green-50">
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-green-600" />
+            Agendamentos - Yuri
+            {selectedDate && (
+              <span className="text-sm font-normal text-gray-600">
+                - {format(selectedDate, "dd/MM/yyyy")}
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="bg-green-50">
+          {agendamentosYuriFiltrados.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">
+              {selectedDate 
+                ? `Nenhum agendamento encontrado para ${format(selectedDate, "dd/MM/yyyy")}`
+                : "Nenhum agendamento encontrado"
+              }
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {agendamentosYuriFiltrados.map((agendamento) => renderAgendamentoCard(agendamento, 'yuri'))}
             </div>
           )}
         </CardContent>
