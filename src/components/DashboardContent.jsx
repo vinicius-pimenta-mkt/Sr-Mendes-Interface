@@ -51,41 +51,59 @@ const DashboardContent = () => {
   const fetchAgendamentosHoje = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+      
+      // Buscar agendamentos do Lucas
+      const responseLucas = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const hoje = new Date().toISOString().split('T')[0];
-        
-        // Filtrar agendamentos de hoje
-        const agendamentosDeHoje = data.filter(agendamento => 
-          agendamento.data === hoje
-        );
-        
-        // Ordenar por horário
-        agendamentosDeHoje.sort((a, b) => a.hora.localeCompare(b.hora));
-        
-        setAgendamentosHoje(agendamentosDeHoje);
-        
-        // Calcular serviços do dia
-        const servicosContagem = {};
-        agendamentosDeHoje.forEach(agendamento => {
-          if (agendamento.servico) {
-            servicosContagem[agendamento.servico] = (servicosContagem[agendamento.servico] || 0) + 1;
-          }
-        });
-        
-        // Converter para array ordenado
-        const servicosArray = Object.entries(servicosContagem)
-          .map(([nome, quantidade]) => ({ nome, quantidade }))
-          .sort((a, b) => b.quantidade - a.quantidade);
-        
-        setServicosDoDia(servicosArray);
+      // Buscar agendamentos do Yuri
+      const responseYuri = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      let todosAgendamentos = [];
+
+      if (responseLucas.ok) {
+        const dataLucas = await responseLucas.json();
+        todosAgendamentos = [...dataLucas.map(a => ({ ...a, barbeiro: 'lucas' }))];
       }
+
+      if (responseYuri.ok) {
+        const dataYuri = await responseYuri.json();
+        todosAgendamentos = [...todosAgendamentos, ...dataYuri.map(a => ({ ...a, barbeiro: 'yuri' }))];
+      }
+
+      const hoje = new Date().toISOString().split('T')[0];
+      
+      // Filtrar agendamentos de hoje
+      const agendamentosDeHoje = todosAgendamentos.filter(agendamento => 
+        agendamento.data === hoje
+      );
+      
+      // Ordenar por horário
+      agendamentosDeHoje.sort((a, b) => a.hora.localeCompare(b.hora));
+      
+      setAgendamentosHoje(agendamentosDeHoje);
+      
+      // Calcular serviços do dia
+      const servicosContagem = {};
+      agendamentosDeHoje.forEach(agendamento => {
+        if (agendamento.servico) {
+          servicosContagem[agendamento.servico] = (servicosContagem[agendamento.servico] || 0) + 1;
+        }
+      });
+      
+      // Converter para array ordenado
+      const servicosArray = Object.entries(servicosContagem)
+        .map(([nome, quantidade]) => ({ nome, quantidade }))
+        .sort((a, b) => b.quantidade - a.quantidade);
+      
+      setServicosDoDia(servicosArray);
     } catch (error) {
       console.error('Erro ao carregar agendamentos de hoje:', error);
     } finally {
@@ -128,6 +146,10 @@ const DashboardContent = () => {
       default:
         return <Clock className="h-4 w-4" />;
     }
+  };
+
+  const getBarbeiroColor = (barbeiro) => {
+    return barbeiro === 'yuri' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600';
   };
 
   if (loading) {
@@ -242,33 +264,39 @@ const DashboardContent = () => {
                 agendamentosHoje
                   .filter(agendamento => agendamento.status !== 'Cancelado')
                   .slice(0, 5) // Mostrar apenas os próximos 5
-                  .map((agendamento) => (
-                    <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                          <span className="text-yellow-600 font-semibold text-sm">
-                            {agendamento.cliente_nome?.charAt(0) || 'C'}
-                          </span>
+                  .map((agendamento) => {
+                    const barbeiroColor = getBarbeiroColor(agendamento.barbeiro);
+                    return (
+                      <div key={`${agendamento.barbeiro}-${agendamento.id}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 ${barbeiroColor} rounded-full flex items-center justify-center`}>
+                            <span className={`font-semibold text-sm`}>
+                              {agendamento.cliente_nome?.charAt(0) || 'C'}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{agendamento.cliente_nome}</p>
+                            <p className="text-sm text-gray-600">{agendamento.servico}</p>
+                            <p className="text-xs text-gray-500">
+                              {agendamento.barbeiro === 'yuri' ? 'Barbeiro: Yuri' : 'Barbeiro: Lucas'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{agendamento.cliente_nome}</p>
-                          <p className="text-sm text-gray-600">{agendamento.servico}</p>
+                        <div className="text-right">
+                          <p className="font-medium text-gray-900">
+                            {formatarHorario(agendamento.hora)} 
+                            <span className="font-light text-gray-500 ml-1">
+                              ({formatarData(agendamento.data)})
+                            </span>
+                          </p>
+                          <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1 mt-1`}>
+                            {getStatusIcon(agendamento.status)}
+                            {agendamento.status}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">
-                          {formatarHorario(agendamento.hora)} 
-                          <span className="font-light text-gray-500 ml-1">
-                            ({formatarData(agendamento.data)})
-                          </span>
-                        </p>
-                        <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1 mt-1`}>
-                          {getStatusIcon(agendamento.status)}
-                          {agendamento.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
               ) : (
                 <p className="text-gray-500 text-center py-4">Nenhum agendamento para hoje</p>
               )}
