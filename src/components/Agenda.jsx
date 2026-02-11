@@ -92,13 +92,36 @@ const Agenda = () => {
   const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAgendamentos(data);
+      
+      const [resLucas, resYuri] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+      ]);
+
+      let allAgendamentos = [];
+
+      if (resLucas.ok) {
+        const dataLucas = await resLucas.json();
+        allAgendamentos = [...dataLucas.map(a => ({ ...a, barber: a.barber || 'Lucas' }))];
       }
+
+      if (resYuri.ok) {
+        const dataYuri = await resYuri.json();
+        allAgendamentos = [...allAgendamentos, ...dataYuri.map(a => ({ ...a, barber: 'Yuri' }))];
+      }
+
+      // Ordenar por data e hora decrescente (mais recentes primeiro)
+      allAgendamentos.sort((a, b) => {
+        const dateA = new Date(`${a.data}T${a.hora}`);
+        const dateB = new Date(`${b.data}T${b.hora}`);
+        return dateB - dateA;
+      });
+
+      setAgendamentos(allAgendamentos);
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
     } finally {
@@ -126,9 +149,14 @@ const Agenda = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const url = editingAgendamento
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${editingAgendamento.id}`
+      const isYuri = formData.barber === 'Yuri';
+      const baseUrl = isYuri 
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+
+      const url = editingAgendamento
+        ? `${baseUrl}/${editingAgendamento.id}`
+        : baseUrl;
 
       const method = editingAgendamento ? 'PUT' : 'POST';
 
@@ -158,11 +186,16 @@ const Agenda = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (agendamento) => {
     if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/${id}`, {
+      const isYuri = agendamento.barber === 'Yuri';
+      const baseUrl = isYuri 
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+
+      const response = await fetch(`${baseUrl}/${agendamento.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -328,7 +361,7 @@ const Agenda = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Lucas">Lucas</SelectItem>
-                      <SelectItem value="Turi">Turi</SelectItem>
+                      <SelectItem value="Yuri">Yuri</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -472,7 +505,7 @@ const Agenda = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(agendamento.id)}
+                          onClick={() => handleDelete(agendamento)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 className="h-4 w-4" />
