@@ -52,6 +52,7 @@ const Relatorios = () => {
           params = `?data_inicio=${yesterday}&data_fim=${yesterday}&barber=${barber}`;
         }
 
+        console.log('Buscando relatórios:', apiUrl + params);
         const response = await fetch(apiUrl + params, {
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -60,6 +61,9 @@ const Relatorios = () => {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Dados recebidos da API:', data);
+          console.log('Serviços (by_service):', data.by_service);
+          
           setServicosMaisVendidos(Array.isArray(data.by_service) ? data.by_service : []);
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
@@ -73,6 +77,8 @@ const Relatorios = () => {
               }))
             );
           }
+        } else {
+          console.error('Erro na resposta da API:', response.status, response.statusText);
         }
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
@@ -177,54 +183,74 @@ const Relatorios = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <BarChart3 className="h-5 w-5 text-amber-600" />
-                Serviços
+                Serviços Mais Realizados
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={servicosMaisVendidos} margin={{ left: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="service" type="category" tick={{ fontSize: 12 }} width={100} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    {barber === 'Geral' ? (
-                      <>
-                        <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[0, 4, 4, 0]} />
-                        <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[0, 4, 4, 0]} />
-                      </>
-                    ) : (
-                      <Bar name={barber} dataKey="total_qty" fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[0, 4, 4, 0]} />
-                    )}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {servicosMaisVendidos.length > 0 ? (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={servicosMaisVendidos} margin={{ left: 50 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="service" type="category" tick={{ fontSize: 12 }} width={100} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      {barber === 'Geral' ? (
+                        <>
+                          <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[0, 4, 4, 0]} />
+                          <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[0, 4, 4, 0]} />
+                        </>
+                      ) : (
+                        <Bar name={barber} dataKey="total_qty" fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[0, 4, 4, 0]} />
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg font-medium">Nenhum serviço realizado</p>
+                    <p className="text-gray-400 text-sm mt-2">Não há dados para o período selecionado</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
-              <CardContent className="pt-6">
+              <CardHeader>
+                <CardTitle className="text-base">Detalhamento por Serviço</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
-                  {servicosMaisVendidos.slice(0, Math.ceil(servicosMaisVendidos.length / 2)).map((s, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-sm">{s.service}</h3>
-                        <p className="text-[10px] text-gray-500">
-                          {barber === 'Geral' ? `Lucas: ${s.lucas_qty} | Yuri: ${s.yuri_qty}` : `Total: ${s.total_qty}`}
-                        </p>
+                  {servicosMaisVendidos.length > 0 ? (
+                    servicosMaisVendidos.slice(0, Math.ceil(servicosMaisVendidos.length / 2)).map((s, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium text-sm">{s.service}</h3>
+                          <p className="text-[10px] text-gray-500">
+                            {barber === 'Geral' ? `Lucas: ${s.lucas_qty} | Yuri: ${s.yuri_qty}` : `Total: ${s.total_qty}`}
+                          </p>
+                        </div>
+                        <span className="font-bold text-sm">{s.total_qty}</span>
                       </div>
-                      <span className="font-bold text-sm">{s.total_qty}</span>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500 py-4">Nenhum serviço no período</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
+              <CardHeader>
+                <CardTitle className="text-base">Continuação</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
-                  {servicosMaisVendidos.slice(Math.ceil(servicosMaisVendidos.length / 2)).map((s, i) => (
+                  {servicosMaisVendidos.length > 0 && servicosMaisVendidos.slice(Math.ceil(servicosMaisVendidos.length / 2)).map((s, i) => (
                     <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <h3 className="font-medium text-sm">{s.service}</h3>
@@ -245,15 +271,25 @@ const Relatorios = () => {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><TrendingUp className="h-5 w-5 text-amber-600" />Evolução da Receita</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={receitaTempos}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="periodo" />
-                  <YAxis tickFormatter={(v) => `R$ ${v}`} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              {receitaTempos.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={receitaTempos}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="periodo" />
+                    <YAxis tickFormatter={(v) => `R$ ${v}`} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="valor" stroke="#FFC107" strokeWidth={3} dot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="text-center">
+                    <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg font-medium">Sem dados de receita</p>
+                    <p className="text-gray-400 text-sm mt-2">Não há receita registrada no período</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -265,14 +301,22 @@ const Relatorios = () => {
                     <tr><th className="px-4 py-3">Profissional</th><th className="px-4 py-3">Data/Hora</th><th className="px-4 py-3">Serviço</th><th className="px-4 py-3">Valor</th></tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {agendamentosPeriodo.map((a, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">{a.barber}</td>
-                        <td className="px-4 py-3">{a.data.split('-').reverse().join('/')} - {a.hora.substring(0, 5)}</td>
-                        <td className="px-4 py-3">{a.servico}</td>
-                        <td className="px-4 py-3 font-bold">R$ {(a.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    {agendamentosPeriodo.length > 0 ? (
+                      agendamentosPeriodo.map((a, i) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium">{a.barber}</td>
+                          <td className="px-4 py-3">{a.data.split('-').reverse().join('/')} - {a.hora.substring(0, 5)}</td>
+                          <td className="px-4 py-3">{a.servico}</td>
+                          <td className="px-4 py-3 font-bold">R$ {(a.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                          Nenhum serviço prestado no período selecionado
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -290,13 +334,21 @@ const Relatorios = () => {
                     <tr><th className="px-4 py-3">Cliente</th><th className="px-4 py-3">Visitas</th><th className="px-4 py-3">Total Gasto</th></tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {frequenciaClientes.map((c, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">{c.nome}</td>
-                        <td className="px-4 py-3">{c.visitas}</td>
-                        <td className="px-4 py-3 font-bold">R$ {c.gasto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    {frequenciaClientes.length > 0 ? (
+                      frequenciaClientes.map((c, i) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium">{c.nome}</td>
+                          <td className="px-4 py-3">{c.visitas}</td>
+                          <td className="px-4 py-3 font-bold">R$ {c.gasto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
+                          Nenhum cliente no período selecionado
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
