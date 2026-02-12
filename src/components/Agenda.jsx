@@ -32,7 +32,6 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  CalendarDays,
   Filter,
   User
 } from 'lucide-react';
@@ -47,56 +46,37 @@ const Agenda = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
-    cliente_nome: '',
-    servico: '',
-    data: '',
-    hora: '',
-    status: 'Pendente',
-    preco: '',
-    observacoes: '',
-    barber: 'Lucas'
+    cliente_nome: '', servico: '', data: '', hora: '', status: 'Pendente', preco: '', observacoes: '', barber: 'Lucas'
   });
 
-  const servicos = [
-    'Sobrancelha', 'Selagem', 'Relaxamento', 'Pigmentação', 'Acabamento (Pezinho)',
-    'Luzes', 'Limpeza de pele', 'Hidratação', 'Finalização penteado', 'Corte+ Sobrancelha',
-    'Corte Masculino', 'Raspar na maquina', 'Corte infantil no carrinho', 'Corte infantil',
-    'Corte + Barba simples', 'Combo Corte + Barboterapia', 'Combo Corte + Barba + Sobrancelha',
-    'Coloração', 'Barboterapia', 'Barba Simples', 'Tratamento V.O'
-  ];
+  const tabelaPrecos = {
+    'Sobrancelha': 20, 'Selagem': 100, 'Relaxamento': 80, 'Pigmentação': 30, 'Acabamento (Pezinho)': 15,
+    'Luzes': 120, 'Limpeza de pele': 40, 'Hidratação': 35, 'Finalização penteado': 25, 'Corte+ Sobrancelha': 55,
+    'Corte Masculino': 45, 'Raspar na maquina': 30, 'Corte infantil no carrinho': 40, 'Corte infantil': 35,
+    'Corte + Barba simples': 75, 'Combo Corte + Barboterapia': 90, 'Combo Corte + Barba + Sobrancelha': 100,
+    'Coloração': 60, 'Barboterapia': 50, 'Barba Simples': 35, 'Tratamento V.O': 70
+  };
 
-  useEffect(() => {
-    fetchAgendamentos();
-  }, []);
+  const servicos = Object.keys(tabelaPrecos);
+
+  useEffect(() => { fetchAgendamentos(); }, []);
 
   const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
       const [resLucas, resYuri] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        })
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
+      let all = [];
+      if (resLucas.ok) { const d = await resLucas.json(); all = [...all, ...d.map(a => ({ ...a, barber: 'Lucas' }))]; }
+      if (resYuri.ok) { const d = await resYuri.json(); all = [...all, ...d.map(a => ({ ...a, barber: 'Yuri' }))]; }
+      setAgendamentos(all);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
 
-      let allAgendamentos = [];
-      if (resLucas.ok) {
-        const dataLucas = await resLucas.json();
-        allAgendamentos = [...allAgendamentos, ...dataLucas.map(a => ({ ...a, barber: 'Lucas' }))];
-      }
-      if (resYuri.ok) {
-        const dataYuri = await resYuri.json();
-        allAgendamentos = [...allAgendamentos, ...dataYuri.map(a => ({ ...a, barber: 'Yuri' }))];
-      }
-
-      setAgendamentos(allAgendamentos);
-    } catch (error) {
-      console.error('Erro ao carregar agendamentos:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleServicoChange = (val) => {
+    setFormData({ ...formData, servico: val, preco: (tabelaPrecos[val] || 0).toString().replace('.', ',') });
   };
 
   const handleSubmit = async (e) => {
@@ -104,263 +84,102 @@ const Agenda = () => {
     try {
       const token = localStorage.getItem('token');
       const isYuri = formData.barber === 'Yuri';
-      const baseUrl = isYuri 
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
-
-      const url = editingAgendamento
-        ? `${baseUrl}/${editingAgendamento.id}`
-        : baseUrl;
-
+      const baseUrl = isYuri ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri` : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+      const url = editingAgendamento ? `${baseUrl}/${editingAgendamento.id}` : baseUrl;
       const method = editingAgendamento ? 'PUT' : 'POST';
-      const precoEmCentavos = formData.preco ? Math.round(parseFloat(formData.preco.toString().replace(',', '.')) * 100) : null;
-      const payload = { ...formData, preco: precoEmCentavos };
-
+      const precoCentavos = Math.round(parseFloat(formData.preco.replace(',', '.')) * 100);
       const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ ...formData, preco: precoCentavos }),
       });
-
-      if (response.ok) {
-        fetchAgendamentos();
-        setDialogOpen(false);
-        resetForm();
-      }
-    } catch (error) {
-      console.error('Erro ao salvar agendamento:', error);
-    }
+      if (response.ok) { fetchAgendamentos(); setDialogOpen(false); resetForm(); }
+    } catch (e) { console.error(e); }
   };
 
-  const handleDelete = async (agendamento) => {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+  const handleDelete = async (a) => {
+    if (!confirm('Excluir?')) return;
     try {
       const token = localStorage.getItem('token');
-      const isYuri = agendamento.barber === 'Yuri';
-      const baseUrl = isYuri 
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
-
-      const response = await fetch(`${baseUrl}/${agendamento.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const baseUrl = a.barber === 'Yuri' ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri` : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+      const response = await fetch(`${baseUrl}/${a.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) fetchAgendamentos();
-    } catch (error) {
-      console.error('Erro ao cancelar agendamento:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const resetForm = () => {
-    setFormData({
-      cliente_nome: '', servico: '', data: '', hora: '',
-      status: 'Pendente', preco: '', observacoes: '', barber: 'Lucas'
-    });
+    setFormData({ cliente_nome: '', servico: '', data: '', hora: '', status: 'Pendente', preco: '', observacoes: '', barber: 'Lucas' });
     setEditingAgendamento(null);
   };
 
-  const formatPreco = (precoRaw) => {
-    if (precoRaw === null || precoRaw === undefined || precoRaw === '') return '0,00';
-    const val = typeof precoRaw === 'number' ? precoRaw / 100 : parseFloat(precoRaw);
-    return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-
-  const openEditDialog = (agendamento) => {
-    setEditingAgendamento(agendamento);
-    setFormData({
-      cliente_nome: agendamento?.cliente_nome ?? '',
-      servico: agendamento?.servico ?? '',
-      data: agendamento?.data ?? '',
-      hora: agendamento?.hora ?? '',
-      status: agendamento?.status ?? 'Pendente',
-      preco: agendamento?.preco ? (agendamento.preco / 100).toString().replace('.', ',') : '',
-      observacoes: agendamento?.observacoes ?? '',
-      barber: agendamento?.barber ?? 'Lucas'
-    });
+  const openEdit = (a) => {
+    setEditingAgendamento(a);
+    setFormData({ ...a, preco: (a.preco / 100).toString().replace('.', ',') });
     setDialogOpen(true);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Confirmado': return 'bg-green-100 text-green-800';
-      case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelado':  return 'bg-red-100 text-red-800';
-      default:           return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
-      case 'Pendente':   return <Clock className="h-4 w-4" />;
-      case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
-      default:           return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const renderTable = (barbeiroNome) => {
-    const filtrados = agendamentos.filter(a => {
-      const matchBarber = a.barber === barbeiroNome;
-      const matchDate = selectedDate ? a.data === format(selectedDate, 'yyyy-MM-dd') : true;
-      return matchBarber && matchDate;
-    }).sort((a, b) => a.hora.localeCompare(b.hora));
-
+  const renderTable = (name) => {
+    const list = agendamentos.filter(a => a.barber === name && (selectedDate ? a.data === format(selectedDate, 'yyyy-MM-dd') : true)).sort((a,b) => a.hora.localeCompare(b.hora));
     return (
       <Card className="flex-1">
         <CardHeader className="bg-gray-50/50 border-b">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <User className={`h-5 w-5 ${barbeiroNome === 'Lucas' ? 'text-amber-600' : 'text-green-600'}`} />
-            Agenda: {barbeiroNome}
+            <User className={`h-5 w-5 ${name === 'Lucas' ? 'text-amber-600' : 'text-green-600'}`} /> {name}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-100/50">
-                <tr>
-                  <th className="px-4 py-3">Hora</th>
-                  <th className="px-4 py-3">Cliente</th>
-                  <th className="px-4 py-3">Serviço</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Ações</th>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-100/50 text-xs uppercase">
+              <tr><th className="p-3 text-left">Hora</th><th className="p-3 text-left">Cliente</th><th className="p-3 text-left">Serviço</th><th className="p-3 text-right">Ações</th></tr>
+            </thead>
+            <tbody className="divide-y">
+              {list.map(a => (
+                <tr key={a.id} className="hover:bg-gray-50">
+                  <td className="p-3 font-semibold">{a.hora.substring(0,5)}</td>
+                  <td className="p-3">{a.cliente_nome}</td>
+                  <td className="p-3">{a.servico}</td>
+                  <td className="p-3 text-right">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(a)} className="h-8 w-8 text-blue-600"><Edit className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(a)} className="h-8 w-8 text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filtrados.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
-                      Nenhum agendamento.
-                    </td>
-                  </tr>
-                ) : (
-                  filtrados.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-gray-700">{a.hora.substring(0, 5)}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{a.cliente_nome}</td>
-                      <td className="px-4 py-3 text-gray-600">{a.servico}</td>
-                      <td className="px-4 py-3">
-                        <Badge className={`${getStatusColor(a.status)} font-normal`}>
-                          <span className="flex items-center gap-1">
-                            {getStatusIcon(a.status)}
-                            {a.status}
-                          </span>
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(a)} className="h-8 w-8 text-blue-600">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(a)} className="h-8 w-8 text-red-600">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center p-10"><div className="animate-spin h-10 w-10 border-b-2 border-amber-600 rounded-full"></div></div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
-          <p className="text-gray-600">Gerencie os horários da barbearia</p>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Agenda</h1>
+        <div className="flex gap-2">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={`flex-1 sm:flex-none ${selectedDate ? "border-amber-600 text-amber-600" : ""}`}>
-                <Filter className="h-4 w-4 mr-2" />
-                {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : "Filtrar Data"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => { setSelectedDate(date); setCalendarOpen(false); }}
-                locale={ptBR}
-              />
-            </PopoverContent>
+            <PopoverTrigger asChild><Button variant="outline">{selectedDate ? format(selectedDate, 'dd/MM/yyyy') : "Filtrar Data"}</Button></PopoverTrigger>
+            <PopoverContent className="w-auto p-0"><CalendarComponent mode="single" selected={selectedDate} onSelect={(d) => { setSelectedDate(d); setCalendarOpen(false); }} locale={ptBR} /></PopoverContent>
           </Popover>
-          {selectedDate && (
-            <Button variant="ghost" onClick={() => setSelectedDate(null)} className="text-gray-500">Limpar</Button>
-          )}
-          
+          {selectedDate && <Button variant="ghost" onClick={() => setSelectedDate(null)}>Limpar</Button>}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm} className="bg-amber-600 hover:bg-amber-700">
-                <Plus className="h-4 w-4 mr-2" /> Novo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogTrigger asChild><Button onClick={resetForm} className="bg-amber-600"><Plus className="h-4 w-4 mr-2" /> Novo</Button></DialogTrigger>
+            <DialogContent>
               <DialogHeader><DialogTitle>{editingAgendamento ? "Editar" : "Novo"} Agendamento</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Nome do Cliente</Label>
-                  <Input value={formData.cliente_nome} onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Serviço</Label>
-                  <Select value={formData.servico} onValueChange={(v) => setFormData({...formData, servico: v})}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
-                    <SelectContent>{servicos.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
+                <Label>Cliente</Label><Input value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} required />
+                <Label>Serviço</Label>
+                <Select value={formData.servico} onValueChange={handleServicoChange}>
+                  <SelectTrigger><SelectValue placeholder="Serviço" /></SelectTrigger>
+                  <SelectContent>{servicos.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Data</Label><Input type="date" value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} required /></div>
+                  <div><Label>Hora</Label><Input type="time" value={formData.hora} onChange={e => setFormData({...formData, hora: e.target.value})} required /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Data</Label>
-                    <Input type="date" value={formData.data} onChange={(e) => setFormData({...formData, data: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Hora</Label>
-                    <Input type="time" value={formData.hora} onChange={(e) => setFormData({...formData, hora: e.target.value})} required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Barbeiro</Label>
-                    <Select value={formData.barber} onValueChange={(v) => setFormData({...formData, barber: v})}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Lucas">Lucas</SelectItem>
-                        <SelectItem value="Yuri">Yuri</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                        <SelectItem value="Confirmado">Confirmado</SelectItem>
-                        <SelectItem value="Cancelado">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Preço (R$)</Label>
-                  <Input placeholder="0,00" value={formData.preco} onChange={(e) => setFormData({...formData, preco: e.target.value})} />
+                  <div><Label>Barbeiro</Label><Select value={formData.barber} onValueChange={v => setFormData({...formData, barber: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Lucas">Lucas</SelectItem><SelectItem value="Yuri">Yuri</SelectItem></SelectContent></Select></div>
+                  <div><Label>Preço</Label><Input value={formData.preco} readOnly className="bg-gray-50" /></div>
                 </div>
                 <Button type="submit" className="w-full bg-amber-600">Salvar</Button>
               </form>
@@ -368,11 +187,7 @@ const Agenda = () => {
           </Dialog>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {renderTable('Lucas')}
-        {renderTable('Yuri')}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{renderTable('Lucas')}{renderTable('Yuri')}</div>
     </div>
   );
 };
