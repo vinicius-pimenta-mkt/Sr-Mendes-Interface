@@ -27,7 +27,9 @@ import {
   Calendar,
   User,
   Scissors,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  CreditCard,
+  DollarSign
 } from "lucide-react";
 import { format, subDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -39,6 +41,7 @@ const Relatorios = () => {
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [agendamentosPeriodo, setAgendamentosPeriodo] = useState([]);
+  const [byPayment, setByPayment] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +72,7 @@ const Relatorios = () => {
           setServicosMaisVendidos(Array.isArray(data.by_service) ? data.by_service : []);
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
+          setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
           if (Array.isArray(data.top_clients)) {
             setFrequenciaClientes(
               data.top_clients.map(c => ({
@@ -94,16 +98,23 @@ const Relatorios = () => {
   };
 
   const COLORS = ['#FFD700', '#4CAF50', '#2196F3', '#FF5722', '#9C27B0', '#00BCD4'];
+  const PAYMENT_COLORS = {
+    'Pix': '#10b981',
+    'Dinheiro': '#f59e0b',
+    'Cartão de Débito': '#3b82f6',
+    'Cartão de Crédito': '#8b5cf6',
+    'Não informado': '#9ca3af'
+  };
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-bold text-gray-900 mb-1">{label || payload[0].payload.service}</p>
+          <p className="font-bold text-gray-900 mb-1">{label || payload[0].payload.service || payload[0].payload.forma}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm flex items-center gap-2" style={{ color: entry.color }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
-              {entry.name}: {entry.name.includes('Receita') ? `R$ ${entry.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : entry.value}
+              {entry.name}: {entry.name.includes('Receita') || entry.name.includes('Valor') ? `R$ ${entry.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : entry.value}
             </p>
           ))}
         </div>
@@ -302,43 +313,76 @@ const Relatorios = () => {
         </TabsContent>
 
         <TabsContent value="receita" className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-green-600" /> Evolução da Receita
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {receitaTempos.length > 0 ? (
-                <div className="h-[350px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={receitaTempos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                      <XAxis dataKey="periodo" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(val) => `R$${val}`} />
-                      <Tooltip 
-                        formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 'Receita']}
-                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="valor" 
-                        stroke="#10b981" 
-                        strokeWidth={3} 
-                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
-                        animationDuration={1500}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
-                  Nenhum faturamento registrado no período selecionado.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-green-600" /> Evolução da Receita
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {receitaTempos.length > 0 ? (
+                  <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={receitaTempos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <XAxis dataKey="periodo" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(val) => `R$${val}`} />
+                        <Tooltip 
+                          formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 'Receita']}
+                          contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="valor" 
+                          stroke="#10b981" 
+                          strokeWidth={3} 
+                          dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 6, strokeWidth: 0 }}
+                          animationDuration={1500}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
+                    Nenhum faturamento registrado no período selecionado.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CreditCard className="h-5 w-5 text-blue-600" /> Receita por Forma de Pagamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {byPayment.length > 0 ? (
+                  <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={byPayment} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <XAxis dataKey="forma" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
+                        <Bar name="Valor (R$)" dataKey="valor" radius={[4, 4, 0, 0]} barSize={40}>
+                          {byPayment.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={PAYMENT_COLORS[entry.forma] || '#9ca3af'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
+                    Nenhum dado de pagamento no período.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <Card className="shadow-sm overflow-hidden">
             <CardHeader className="bg-gray-50/50 border-b">
@@ -352,6 +396,7 @@ const Relatorios = () => {
                       <th className="px-6 py-4 font-bold">Cliente</th>
                       <th className="px-6 py-4 font-bold">Serviço</th>
                       <th className="px-6 py-4 font-bold">Data/Hora</th>
+                      <th className="px-6 py-4 font-bold">Pagamento</th>
                       <th className="px-6 py-4 font-bold">Barbeiro</th>
                       <th className="px-6 py-4 font-bold text-right">Valor</th>
                     </tr>
@@ -364,6 +409,11 @@ const Relatorios = () => {
                           <td className="px-6 py-4 text-gray-600">{a.servico}</td>
                           <td className="px-6 py-4 text-gray-500">{format(parseISO(a.data), 'dd/MM/yyyy')} - {a.hora.substring(0, 5)}</td>
                           <td className="px-6 py-4">
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
+                              {a.forma_pagamento || 'Não informado'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
                             <Badge className={`${a.barber === 'Yuri' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} border-none font-normal`}>
                               {a.barber}
                             </Badge>
@@ -375,7 +425,7 @@ const Relatorios = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="5" className="px-6 py-12 text-center text-gray-400 italic">Nenhum serviço prestado no período selecionado.</td>
+                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400 italic">Nenhum serviço prestado no período selecionado.</td>
                       </tr>
                     )}
                   </tbody>
@@ -426,13 +476,20 @@ const Relatorios = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <p className="text-amber-100 text-xs font-bold uppercase">Total de Serviços</p>
-                  <p className="text-4xl font-bold">{servicosMaisVendidos.reduce((acc, curr) => acc + curr.total_qty, 0)}</p>
-                </div>
-                <div>
                   <p className="text-amber-100 text-xs font-bold uppercase">Receita Total Bruta</p>
                   <p className="text-4xl font-bold">R$ {servicosMaisVendidos.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                 </div>
+                
+                <div className="pt-4 border-t border-amber-500 space-y-3">
+                  <p className="text-amber-100 text-xs font-bold uppercase">Por Meio de Pagamento</p>
+                  {byPayment.map((p, i) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span className="text-amber-50">{p.forma}:</span>
+                      <span className="font-bold">R$ {p.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="pt-4 border-t border-amber-500">
                   <p className="text-amber-100 text-[10px] italic">Relatório gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
                 </div>
