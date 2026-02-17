@@ -18,7 +18,8 @@ const DashboardContent = () => {
     atendimentosHoje: 0,
     receitaDia: 0,
     servicosRealizados: 0,
-    agendamentos: []
+    agendamentos: [],
+    agoraHora: "00:00"
   });
   const [loading, setLoading] = useState(true);
 
@@ -68,12 +69,12 @@ const DashboardContent = () => {
     }
   };
 
-  const getBarbeiroColor = (barbeiro) => {
-    return barbeiro === 'Yuri' || barbeiro === 'yuri' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600';
-  };
+  // Filtragem inteligente: Aguardando vs Realizados
+  const agendamentosAguardando = dashboardData.agendamentos.filter(a => a.status === 'Pendente' && a.hora >= dashboardData.agoraHora);
+  const agendamentosRealizados = dashboardData.agendamentos.filter(a => a.status === 'Confirmado' || (a.status === 'Pendente' && a.hora < dashboardData.agoraHora));
 
-  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
+  const agendamentosLucas = agendamentosAguardando.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = agendamentosAguardando.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
@@ -101,12 +102,12 @@ const DashboardContent = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border-l-4 border-l-yellow-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Atendimentos Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Total de Agendamentos</CardTitle>
             <Users className="h-5 w-5 text-yellow-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.atendimentosHoje}</div>
-            <p className="text-xs text-gray-500 mt-1">total agendado para hoje</p>
+            <p className="text-xs text-gray-500 mt-1">marcados para hoje</p>
           </CardContent>
         </Card>
 
@@ -129,8 +130,8 @@ const DashboardContent = () => {
             <CheckCircle className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
-            <p className="text-xs text-gray-500 mt-1">atendimentos concluídos</p>
+            <div className="text-2xl font-bold text-gray-900">{agendamentosRealizados.length}</div>
+            <p className="text-xs text-gray-500 mt-1">horário já passou ou concluído</p>
           </CardContent>
         </Card>
 
@@ -141,14 +142,14 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.agendamentos.filter(a => a.status === 'Pendente').length}
+              {agendamentosAguardando.length}
             </div>
-            <p className="text-xs text-gray-500 mt-1">próximos clientes</p>
+            <p className="text-xs text-gray-500 mt-1">próximos clientes do dia</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Content Grid - Duas Tabelas Separadas */}
+      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Lucas - Tabela */}
         <Card className="shadow-sm">
@@ -181,7 +182,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento para o Lucas hoje.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Lucas hoje.</div>
               )}
             </div>
           </CardContent>
@@ -218,7 +219,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento para o Yuri hoje.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Yuri hoje.</div>
               )}
             </div>
           </CardContent>
