@@ -4,6 +4,7 @@ import DashboardContent from './DashboardContent';
 import Agenda from './Agenda';
 import Clientes from './Clientes';
 import Relatorios from './Relatorios';
+import Planos from './Planos';
 
 const Dashboard = ({ onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -16,6 +17,8 @@ const Dashboard = ({ onLogout }) => {
         return <Clientes />;
       case 'relatorios':
         return <Relatorios />;
+      case 'planos':
+        return <Planos />;
       default:
         return <DashboardContent />;
     }
@@ -38,4 +41,3 @@ const Dashboard = ({ onLogout }) => {
 };
 
 export default Dashboard;
-
