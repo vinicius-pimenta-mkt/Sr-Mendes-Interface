@@ -33,6 +33,22 @@ import {
 } from 'lucide-react';
 
 const Planos = () => {
+  // Dados extraídos do PDF para carga inicial (Fallback caso o banco esteja vazio)
+  const dadosIniciais = [
+    { id: 'f1', nome: "Samuel junior pereira Braga", cpf: "161.208.026-06", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "09/02", status: "Ativo", data_cadastro: "2026-02-09" },
+    { id: 'f2', nome: "JOEL HONORIO MENDES", cpf: "153.972.066-79", plano: "PLANO CORTE QUINZENAL", data_vencimento: "01/02", status: "Ativo", data_cadastro: "2026-02-01" },
+    { id: 'f3', nome: "Astrogildo Antunes", cpf: "036.928.906-48", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "13/01", status: "Ativo", data_cadastro: "2026-01-13" },
+    { id: 'f4', nome: "Marcelo Augusto", cpf: "096.829.906-70", plano: "PLANO CORTE QUINZENAL", data_vencimento: "26/11", status: "Ativo", data_cadastro: "2025-11-26" },
+    { id: 'f5', nome: "Douglas Diego", cpf: "130.452.446-96", plano: "PLANO BARBA ILIMITADO", data_vencimento: "01/08", status: "Ativo", data_cadastro: "2025-08-01" },
+    { id: 'f6', nome: "Ulisses aparecido Ramos", cpf: "099.037.066-69", plano: "PLANO CORTE QUINZENAL", data_vencimento: "15/07", status: "Ativo", data_cadastro: "2025-07-15" },
+    { id: 'f7', nome: "Lucas Alberto", cpf: "136.022.826-86", plano: "PLANO CORTE QUINZENAL", data_vencimento: "06/06", status: "Ativo", data_cadastro: "2025-06-06" },
+    { id: 'f8', nome: "Emerson Charles De Oliveira Silva", cpf: "126.733.526-27", plano: "PLANO CORTE QUINZENAL", data_vencimento: "23/04", status: "Ativo", data_cadastro: "2025-04-23" },
+    { id: 'f9', nome: "Katriel Castro silva", cpf: "174.618.446-95", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "18/04", status: "Ativo", data_cadastro: "2025-04-18" },
+    { id: 'f10', nome: "Rian James", cpf: "099.299.416-06", plano: "PLANO CORTE MENSAL", data_vencimento: "12/04", status: "Ativo", data_cadastro: "2025-04-12" },
+    { id: 'f11', nome: "Gabriel alves Parreiras", cpf: "135.503.866-99", plano: "PLANO CORTE QUINZENAL", data_vencimento: "28/03", status: "Ativo", data_cadastro: "2025-03-28" },
+    { id: 'f12', nome: "Alexandre José Pereira Pinto", cpf: "113.100.246-69", plano: "PLANO CORTE MENSAL", data_vencimento: "22/03", status: "Ativo", data_cadastro: "2025-03-22" }
+  ];
+
   const [assinantes, setAssinantes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -42,7 +58,7 @@ const Planos = () => {
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
-    plano: 'PLANO MENSAL DE CORTE E BARBA',
+    plano: 'PLANO CORTE MENSAL',
     data_vencimento: '',
     ultimo_pagamento: '',
     forma_pagamento: 'Pix',
@@ -71,10 +87,14 @@ const Planos = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setAssinantes(data);
+        // Se o banco estiver vazio, usa os dados do PDF como inicial
+        setAssinantes(data.length > 0 ? data : dadosIniciais);
+      } else {
+        setAssinantes(dadosIniciais);
       }
     } catch (error) {
       console.error('Erro ao carregar assinantes:', error);
+      setAssinantes(dadosIniciais);
     } finally {
       setLoading(false);
     }
@@ -110,6 +130,10 @@ const Planos = () => {
   };
 
   const handleDelete = async (id) => {
+    if (typeof id === 'string' && id.startsWith('f')) {
+      setAssinantes(prev => prev.filter(a => a.id !== id));
+      return;
+    }
     if (!confirm('Deseja remover este assinante?')) return;
     try {
       const token = localStorage.getItem('token');
@@ -127,7 +151,7 @@ const Planos = () => {
     setFormData({
       nome: '',
       cpf: '',
-      plano: 'PLANO MENSAL DE CORTE E BARBA',
+      plano: 'PLANO CORTE MENSAL',
       data_vencimento: '',
       ultimo_pagamento: '',
       forma_pagamento: 'Pix',
@@ -143,8 +167,8 @@ const Planos = () => {
       cpf: assinante.cpf,
       plano: assinante.plano,
       data_vencimento: assinante.data_vencimento,
-      ultimo_pagamento: assinante.ultimo_pagamento,
-      forma_pagamento: assinante.forma_pagamento,
+      ultimo_pagamento: assinante.ultimo_pagamento || '',
+      forma_pagamento: assinante.forma_pagamento || 'Pix',
       status: assinante.status
     });
     setDialogOpen(true);
