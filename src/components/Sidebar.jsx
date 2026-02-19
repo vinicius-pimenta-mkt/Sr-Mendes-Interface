@@ -5,7 +5,8 @@ import {
   Users, 
   LogOut,
   Menu,
-  X
+  X,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -19,6 +20,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'relatorios', label: 'Relatórios', icon: FileText },
     { id: 'clientes', label: 'Clientes', icon: Users },
+    { id: 'planos', label: 'Planos', icon: UserCheck },
   ];
 
   const handleMenuItemClick = (itemId) => {
@@ -40,8 +42,6 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
         </Button>
       </div>
 
-      {/* Mobile Overlay - Removido para manter a tela estática */}
-
       {/* Sidebar */}
       <div className={`
         fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-45
@@ -51,9 +51,9 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
         {/* Header */}
         <div className="p-6 border-b">
           <div className="flex items-center space-x-3">
-            <img src={logo} alt="Beleza Masculina Barbearia" className="h-10 w-auto" />
+            <img src={logo} alt="Sr. Mendes Barbearia" className="h-10 w-auto" />
             <div>
-              <h2 className="font-bold text-gray-900">Beleza Masculina</h2>
+              <h2 className="font-bold text-gray-900">Sr. Mendes</h2>
               <p className="text-sm text-gray-600">Barbearia</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
               <span className="text-amber-600 font-semibold text-sm">SM</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Beleza Masculina</p>
+              <p className="text-sm font-medium text-gray-900">Sr. Mendes</p>
               <p className="text-xs text-gray-600">Administrador</p>
             </div>
           </div>
