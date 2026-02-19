@@ -31,8 +31,7 @@ import {
   CreditCard,
   DollarSign
 } from "lucide-react";
-import { format, subDays, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, subDays } from 'date-fns';
 
 const Relatorios = () => {
   const [periodo, setPeriodo] = useState("mes");
@@ -98,13 +97,6 @@ const Relatorios = () => {
   };
 
   const COLORS = ['#FFD700', '#4CAF50', '#2196F3', '#FF5722', '#9C27B0', '#00BCD4'];
-  const PAYMENT_COLORS = {
-    'Pix': '#10b981',
-    'Dinheiro': '#f59e0b',
-    'Cartão de Débito': '#3b82f6',
-    'Cartão de Crédito': '#8b5cf6',
-    'Não informado': '#9ca3af'
-  };
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -174,7 +166,7 @@ const Relatorios = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 no-print">
         <Card className="shadow-sm">
           <CardContent className="pt-6 flex items-center gap-4">
             <Calendar className="h-5 w-5 text-amber-600" />
@@ -212,92 +204,48 @@ const Relatorios = () => {
       </div>
 
       <Tabs defaultValue="servicos" className="space-y-6">
-        <TabsList className="bg-gray-100 p-1 rounded-xl">
+        <TabsList className="bg-gray-100 p-1 rounded-xl no-print">
           <TabsTrigger value="servicos" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Serviços</TabsTrigger>
           <TabsTrigger value="receita" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Faturamento</TabsTrigger>
           <TabsTrigger value="clientes" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Clientes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="servicos" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-amber-600" /> Desempenho por Serviço
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {servicosMaisVendidos.length > 0 ? (
-                  <div className="h-[350px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={servicosMaisVendidos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                        <XAxis dataKey="service" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
-                        <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
-                        {barber === 'Geral' ? (
-                          <>
-                            <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[4, 4, 0, 0]} barSize={30} />
-                            <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[4, 4, 0, 0]} barSize={30} />
-                          </>
-                        ) : (
-                          <Bar name={barber} dataKey="total_qty" fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[4, 4, 0, 0]} barSize={50} />
-                        )}
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="h-[350px] flex flex-col items-center justify-center text-gray-400">
-                    <Scissors className="h-12 w-12 mb-2 opacity-20" />
-                    <p>Sem dados para exibir o gráfico</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <PieChartIcon className="h-5 w-5 text-amber-600" /> Distribuição
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px] w-full">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-amber-600" /> Desempenho por Serviço
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {servicosMaisVendidos.length > 0 ? (
+                <div className="h-[350px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={servicosMaisVendidos}
-                        dataKey="total_qty"
-                        nameKey="service"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                      >
-                        {servicosMaisVendidos.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
+                    <BarChart data={servicosMaisVendidos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="service" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+                      <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
+                      <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
+                      {barber === 'Geral' ? (
+                        <>
+                          <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[4, 4, 0, 0]} barSize={30} />
+                          <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[4, 4, 0, 0]} barSize={30} />
+                        </>
+                      ) : (
+                        <Bar name={barber} dataKey="total_qty" fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[4, 4, 0, 0]} barSize={50} />
+                      )}
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="mt-4 space-y-2">
-                  {servicosMaisVendidos.slice(0, 3).map((s, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{backgroundColor: COLORS[i % COLORS.length]}}></div>
-                        <span className="text-gray-600">{s.service}</span>
-                      </div>
-                      <span className="font-bold">{((s.total_qty / servicosMaisVendidos.reduce((acc, curr) => acc + curr.total_qty, 0)) * 100).toFixed(0)}%</span>
-                    </div>
-                  ))}
+              ) : (
+                <div className="h-[350px] flex flex-col items-center justify-center text-gray-400">
+                  <Scissors className="h-12 w-12 mb-2 opacity-20" />
+                  <p>Sem dados para exibir o gráfico</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card className="shadow-sm">
             <CardHeader>
@@ -313,45 +261,44 @@ const Relatorios = () => {
         </TabsContent>
 
         <TabsContent value="receita" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <TrendingUp className="h-5 w-5 text-green-600" /> Evolução da Receita
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitaTempos.length > 0 ? (
-                  <div className="h-[350px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={receitaTempos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                        <XAxis dataKey="periodo" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(val) => `R$${val}`} />
-                        <Tooltip 
-                          formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 'Receita']}
-                          contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="valor" 
-                          stroke="#10b981" 
-                          strokeWidth={3} 
-                          dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                          activeDot={{ r: 6, strokeWidth: 0 }}
-                          animationDuration={1500}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
-                    Nenhum faturamento registrado no período selecionado.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <TrendingUp className="h-5 w-5 text-green-600" /> Evolução da Receita {periodo === 'hoje' ? '(Por Hora)' : ''}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {receitaTempos.length > 0 ? (
+                <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={receitaTempos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="periodo" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(val) => `R$${val}`} />
+                      <Tooltip 
+                        formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 'Receita']}
+                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="valor" 
+                        stroke="#10b981" 
+                        strokeWidth={3} 
+                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
+                  Nenhum faturamento registrado no período selecionado.
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -360,142 +307,90 @@ const Relatorios = () => {
               </CardHeader>
               <CardContent>
                 {byPayment.length > 0 ? (
-                  <div className="h-[350px] w-full">
+                  <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={byPayment} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                        <XAxis dataKey="forma" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
-                        <Bar name="Valor (R$)" dataKey="valor" radius={[4, 4, 0, 0]} barSize={40}>
+                      <PieChart>
+                        <Pie
+                          data={byPayment}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="valor"
+                          nameKey="forma"
+                        >
                           {byPayment.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={PAYMENT_COLORS[entry.forma] || '#9ca3af'} />
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
-                        </Bar>
-                      </BarChart>
+                        </Pie>
+                        <Tooltip formatter={(v) => `R$ ${v.toLocaleString('pt-BR')}`} />
+                        <Legend />
+                      </PieChart>
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
-                    Nenhum dado de pagamento no período.
-                  </div>
+                  <p className="text-center text-gray-400 py-10 italic">Sem dados de pagamento.</p>
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          <Card className="shadow-sm overflow-hidden">
-            <CardHeader className="bg-gray-50/50 border-b">
-              <CardTitle className="text-lg">Histórico de Receitas</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
-                    <tr>
-                      <th className="px-6 py-4 font-bold">Cliente</th>
-                      <th className="px-6 py-4 font-bold">Serviço</th>
-                      <th className="px-6 py-4 font-bold">Data/Hora</th>
-                      <th className="px-6 py-4 font-bold">Pagamento</th>
-                      <th className="px-6 py-4 font-bold">Barbeiro</th>
-                      <th className="px-6 py-4 font-bold text-right">Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {agendamentosPeriodo.length > 0 ? (
-                      agendamentosPeriodo.map((a, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 font-medium text-gray-900">{a.cliente_nome}</td>
-                          <td className="px-6 py-4 text-gray-600">{a.servico}</td>
-                          <td className="px-6 py-4 text-gray-500">{format(parseISO(a.data), 'dd/MM/yyyy')} - {a.hora.substring(0, 5)}</td>
-                          <td className="px-6 py-4">
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
-                              {a.forma_pagamento || 'Não informado'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Badge className={`${a.barber === 'Yuri' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} border-none font-normal`}>
-                              {a.barber}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-right font-bold text-gray-900">
-                            R$ {(a.preco / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400 italic">Nenhum serviço prestado no período selecionado.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="clientes" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="md:col-span-2 shadow-sm">
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5 text-blue-600" /> Top Clientes
-                </CardTitle>
+                <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {frequenciaClientes.length > 0 ? (
-                    frequenciaClientes.map((c, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
-                            {i + 1}
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900">{c.nome}</p>
-                            <p className="text-xs text-gray-500">{c.visitas} visitas realizadas</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-blue-600">R$ {c.gasto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Gasto</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-gray-500 py-8">Nenhum dado de cliente disponível.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm bg-amber-600 text-white border-none">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">Resumo Geral</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <p className="text-amber-100 text-xs font-bold uppercase">Receita Total Bruta</p>
-                  <p className="text-4xl font-bold">R$ {servicosMaisVendidos.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                </div>
-                
-                <div className="pt-4 border-t border-amber-500 space-y-3">
-                  <p className="text-amber-100 text-xs font-bold uppercase">Por Meio de Pagamento</p>
                   {byPayment.map((p, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="text-amber-50">{p.forma}:</span>
-                      <span className="font-bold">R$ {p.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[i % COLORS.length]}}></div>
+                        <span className="text-sm font-medium">{p.forma}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-sm">R$ {p.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                        <p className="text-[10px] text-gray-500">{p.quantidade} serviços</p>
+                      </div>
                     </div>
                   ))}
-                </div>
-
-                <div className="pt-4 border-t border-amber-500">
-                  <p className="text-amber-100 text-[10px] italic">Relatório gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
                 </div>
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="clientes" className="space-y-6">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5 text-amber-600" /> Top 10 Clientes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {frequenciaClientes.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-bold">
+                        {i + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">{c.nome}</h4>
+                        <p className="text-xs text-gray-500">{c.visitas} visitas no período</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400 uppercase font-bold">Total Gasto</p>
+                      <p className="text-lg font-black text-amber-600">R$ {c.gasto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                    </div>
+                  </div>
+                ))}
+                {frequenciaClientes.length === 0 && (
+                  <div className="text-center py-10 text-gray-400 italic">Nenhum cliente registrado no período.</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
