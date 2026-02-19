@@ -14,7 +14,6 @@ interface LoginResponse {
     id: number;
     nome: string;
     username: string;
-    // adicione outras propriedades do usuário se houver
   };
 }
 
@@ -47,11 +46,9 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
       if (response.ok) {
         const responseData = data as LoginResponse;
         localStorage.setItem('token', responseData.token);
-        // Passa o objeto de usuário para a função onLogin
         onLogin(responseData.user);
       } else {
         const errorData = data as ErrorResponse;
-        // Garante que o erro seja sempre uma string
         const errorMessage = typeof errorData.error === 'object' 
           ? errorData.error.message 
           : errorData.error;
@@ -65,22 +62,26 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center">
-            <img src={logo} alt="Beleza Masculina Barbearia" className="h-20 w-auto" />
+    <div className="min-h-[100dvh] bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center p-4 sm:p-6">
+      <Card className="w-full max-w-[400px] shadow-2xl border-none overflow-hidden">
+        <CardHeader className="text-center space-y-4 pt-8 pb-4">
+          <div className="flex justify-center mb-2">
+            <div className="p-3 bg-white rounded-2xl shadow-sm border border-amber-100">
+              <img src={logo} alt="Sr. Mendes Barbearia" className="h-16 sm:h-20 w-auto object-contain" />
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
-            <Scissors className="h-6 w-6 text-amber-600" />
-            Beleza Masculina Barbearia
-          </CardTitle>
-          <p className="text-gray-600">Painel Administrativo</p>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center justify-center gap-2 tracking-tight">
+              <Scissors className="h-6 w-6 text-amber-600" />
+              SR. MENDES
+            </CardTitle>
+            <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">Painel Administrativo</p>
+          </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-6 sm:px-8 pb-10">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="username" className="text-xs font-bold text-gray-700 uppercase ml-1">Usuário</Label>
               <Input
                 id="username"
                 type="text"
@@ -88,11 +89,11 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Digite seu usuário"
                 required
-                className="w-full"
+                className="w-full h-12 bg-gray-50 border-gray-200 focus:border-amber-500 focus:ring-amber-500 rounded-xl transition-all"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-xs font-bold text-gray-700 uppercase ml-1">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -100,20 +101,27 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite sua senha"
                 required
-                className="w-full"
+                className="w-full h-12 bg-gray-50 border-gray-200 focus:border-amber-500 focus:ring-amber-500 rounded-xl transition-all"
               />
             </div>
+            
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+              <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 rounded-xl py-3">
+                <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
               </Alert>
             )}
+
             <Button
               type="submit"
-              className="w-full bg-amber-600 hover:bg-amber-700"
+              className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-lg shadow-amber-200 transition-all active:scale-[0.98]"
               disabled={loading}
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Entrando...</span>
+                </div>
+              ) : 'Entrar no Painel'}
             </Button>
           </form>
         </CardContent>
