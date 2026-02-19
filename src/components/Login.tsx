@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Scissors } from 'lucide-react';
 import logo from '../assets/logo.png';
 
-// Definindo a interface para os dados da API para melhor tipagem
 interface LoginResponse {
   token: string;
   user: {
@@ -63,19 +62,19 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center p-4 sm:p-6">
-      <Card className="w-full max-w-[400px] shadow-2xl border-none overflow-hidden">
+      <Card className="w-full max-w-[400px] shadow-xl border-none overflow-hidden">
         <CardHeader className="text-center space-y-4 pt-8 pb-4">
           <div className="flex justify-center mb-2">
             <div className="p-3 bg-white rounded-2xl shadow-sm border border-amber-100">
-              <img src={logo} alt="Sr. Mendes Barbearia" className="h-16 sm:h-20 w-auto object-contain" />
+              <img src={logo} alt="Beleza Masculina" className="h-16 sm:h-20 w-auto object-contain" />
             </div>
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center justify-center gap-2 tracking-tight">
-              <Scissors className="h-6 w-6 text-amber-600" />
-              SR. MENDES
+            <CardTitle className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center justify-center gap-2 tracking-tight">
+              <Scissors className="h-5 w-5 text-amber-600" />
+              Beleza Masculina
             </CardTitle>
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">Painel Administrativo</p>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">Painel Administrativo</p>
           </div>
         </CardHeader>
         <CardContent className="px-6 sm:px-8 pb-10">
@@ -89,7 +88,7 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Digite seu usuário"
                 required
-                className="w-full h-12 bg-gray-50 border-gray-200 focus:border-amber-500 focus:ring-amber-500 rounded-xl transition-all"
+                className="w-full h-11 bg-gray-50 border-gray-200 focus:border-amber-500 focus:ring-amber-500 rounded-xl transition-all"
               />
             </div>
             <div className="space-y-2">
@@ -101,7 +100,7 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite sua senha"
                 required
-                className="w-full h-12 bg-gray-50 border-gray-200 focus:border-amber-500 focus:ring-amber-500 rounded-xl transition-all"
+                className="w-full h-11 bg-gray-50 border-gray-200 focus:border-amber-500 focus:ring-amber-500 rounded-xl transition-all"
               />
             </div>
             
@@ -113,7 +112,7 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
 
             <Button
               type="submit"
-              className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-lg shadow-amber-200 transition-all active:scale-[0.98]"
+              className="w-full h-11 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-sm shadow-amber-100 transition-all active:scale-[0.98]"
               disabled={loading}
             >
               {loading ? (
