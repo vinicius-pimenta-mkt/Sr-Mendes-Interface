@@ -74,13 +74,15 @@ const Relatorios = () => {
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
           
           if (Array.isArray(data.top_clients)) {
-            setFrequenciaClientes(
-              data.top_clients.map(c => ({
+            // Ordenar clientes pelo valor gasto (maior para menor)
+            const clientesOrdenados = data.top_clients
+              .map(c => ({
                 nome: c.name,
                 visitas: c.visits,
                 gasto: c.spent
               }))
-            );
+              .sort((a, b) => b.gasto - a.gasto);
+            setFrequenciaClientes(clientesOrdenados);
           }
         }
       } catch (err) {
@@ -225,9 +227,9 @@ const Relatorios = () => {
               {servicosMaisVendidos.length > 0 ? (
                 <div className="h-[350px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={servicosMaisVendidos} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={servicosMaisVendidos} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                      <XAxis dataKey="service" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="service" tick={{ fontSize: 10, angle: -45, textAnchor: 'end', height: 80 }} axisLine={false} tickLine={false} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
                       <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
