@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import {
   BarChart,
   Bar,
@@ -61,9 +60,7 @@ const Relatorios = () => {
         }
 
         const response = await fetch(apiUrl + params, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
+          headers: { "Authorization": `Bearer ${token}` },
         });
 
         if (response.ok) {
@@ -72,15 +69,7 @@ const Relatorios = () => {
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
-          if (Array.isArray(data.top_clients)) {
-            setFrequenciaClientes(
-              data.top_clients.map(c => ({
-                nome: c.name,
-                visitas: c.visits,
-                gasto: c.spent
-              }))
-            );
-          }
+          setFrequenciaClientes(Array.isArray(data.top_clients) ? data.top_clients : []);
         }
       } catch (err) {
         console.error("Erro ao buscar relatórios:", err);
@@ -88,13 +77,10 @@ const Relatorios = () => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [periodo, barber]);
 
-  const exportarRelatorio = () => {
-    window.print();
-  };
+  const exportarRelatorio = () => window.print();
 
   const COLORS = ['#FFD700', '#4CAF50', '#2196F3', '#FF5722', '#9C27B0', '#00BCD4'];
 
@@ -115,44 +101,7 @@ const Relatorios = () => {
     return null;
   };
 
-  const renderTabelaServicos = (barbeiroNome, data) => {
-    const filtrados = data.filter(s => barbeiroNome === 'Lucas' ? s.lucas_qty > 0 : s.yuri_qty > 0);
-    
-    return (
-      <div className="space-y-3">
-        <h3 className={`font-bold text-sm flex items-center gap-2 p-2 rounded ${barbeiroNome === 'Lucas' ? 'bg-yellow-50 text-yellow-800' : 'bg-green-50 text-green-800'}`}>
-          <User className="h-4 w-4" /> {barbeiroNome}
-        </h3>
-        <div className="space-y-2">
-          {filtrados.length > 0 ? (
-            filtrados.map((s, i) => (
-              <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div>
-                  <h4 className="font-medium text-sm">{s.service}</h4>
-                  <p className="text-[10px] text-gray-500">Quantidade: {barbeiroNome === 'Lucas' ? s.lucas_qty : s.yuri_qty}</p>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-sm text-gray-900">
-                    {barbeiroNome === 'Lucas' ? s.lucas_qty : s.yuri_qty}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-center text-gray-400 py-4 text-sm italic">Sem serviços para {barbeiroNome}</p>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
-      </div>
-    );
-  }
+  const totalFaturamento = byPayment.reduce((acc, curr) => acc + curr.valor, 0);
 
   return (
     <div className="space-y-6">
@@ -246,18 +195,6 @@ const Relatorios = () => {
               )}
             </CardContent>
           </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Detalhamento por Barbeiro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {(barber === 'Geral' || barber === 'Lucas') && renderTabelaServicos('Lucas', servicosMaisVendidos)}
-                {(barber === 'Geral' || barber === 'Yuri') && renderTabelaServicos('Yuri', servicosMaisVendidos)}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="receita" className="space-y-6">
@@ -279,80 +216,34 @@ const Relatorios = () => {
                         formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 'Receita']}
                         contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="valor" 
-                        stroke="#10b981" 
-                        strokeWidth={3} 
-                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
-                      />
+                      <Line type="monotone" dataKey="valor" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">
-                  Nenhum faturamento registrado no período selecionado.
-                </div>
+                <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 italic">Sem faturamento no período.</div>
               )}
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <CreditCard className="h-5 w-5 text-blue-600" /> Receita por Forma de Pagamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {byPayment.length > 0 ? (
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={byPayment}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="valor"
-                          nameKey="forma"
-                        >
-                          {byPayment.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(v) => `R$ ${v.toLocaleString('pt-BR')}`} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-400 py-10 italic">Sem dados de pagamento.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-lg">Resumo Financeiro</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {byPayment.map((p, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[i % COLORS.length]}}></div>
-                        <span className="text-sm font-medium">{p.forma}</span>
-                      </div>
+                      <span className="text-sm font-medium">{p.forma}</span>
                       <div className="text-right">
                         <p className="font-bold text-sm">R$ {p.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                         <p className="text-[10px] text-gray-500">{p.quantidade} serviços</p>
                       </div>
                     </div>
                   ))}
+                  <div className="pt-4 border-t flex items-center justify-between">
+                    <span className="font-bold text-gray-900">FATURAMENTO TOTAL</span>
+                    <span className="font-black text-lg text-green-600">R$ {totalFaturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -361,33 +252,23 @@ const Relatorios = () => {
 
         <TabsContent value="clientes" className="space-y-6">
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5 text-amber-600" /> Top 10 Clientes
-              </CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5 text-amber-600" /> Top 10 Clientes (Por Gasto)</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {frequenciaClientes.map((c, i) => (
                   <div key={i} className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-bold">
-                        {i + 1}
-                      </div>
+                      <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-bold">{i + 1}</div>
                       <div>
-                        <h4 className="font-bold text-gray-900">{c.nome}</h4>
-                        <p className="text-xs text-gray-500">{c.visitas} visitas no período</p>
+                        <h4 className="font-bold text-gray-900">{c.name}</h4>
+                        <p className="text-xs text-gray-500">{c.visits} visitas</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-400 uppercase font-bold">Total Gasto</p>
-                      <p className="text-lg font-black text-amber-600">R$ {c.gasto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                      <p className="text-lg font-black text-amber-600">R$ {c.spent.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                     </div>
                   </div>
                 ))}
-                {frequenciaClientes.length === 0 && (
-                  <div className="text-center py-10 text-gray-400 italic">Nenhum cliente registrado no período.</div>
-                )}
               </div>
             </CardContent>
           </Card>
