@@ -26,7 +26,7 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    // Atualizar a cada 5 minutos para manter o dashboard fresco
+    // Atualizar a cada 5 minutos para manter o dashboard sincronizado com a agenda
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -34,6 +34,7 @@ const DashboardContent = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
+      // Agora o endpoint /api/relatorios/dashboard busca dados diretamente da agenda (agendamentos e agendamentos_yuri)
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -71,7 +72,7 @@ const DashboardContent = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-  // Os agendamentos já vêm filtrados do backend (apenas futuros nas próximas 24h)
+  // Os agendamentos já vêm filtrados do backend diretamente da agenda (apenas futuros nas próximas 24h)
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
@@ -93,7 +94,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Próximos agendamentos (Próximas 24h)</p>
+          <p className="text-gray-600">Agenda: Próximos agendamentos (Próximas 24h)</p>
         </div>
       </div>
 
@@ -148,7 +149,7 @@ const DashboardContent = () => {
         </Card>
       </div>
 
-      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros) */}
+      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros da Agenda) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Lucas - Tabela */}
         <Card className="shadow-sm">
