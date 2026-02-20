@@ -18,7 +18,6 @@ const DashboardContent = () => {
     atendimentosHoje: 0,
     receitaDia: 0,
     servicosRealizados: 0,
-    servicosAguardando: 0,
     agendamentos: [],
     agoraHora: "00:00"
   });
@@ -26,16 +25,12 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    // Atualizar a cada 5 minutos para manter o dashboard sincronizado com a agenda em tempo real
-    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      // Novo endpoint dedicado para agenda em tempo real: /api/agendamentos/dashboard/proximos
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/dashboard/proximos`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -71,10 +66,25 @@ const DashboardContent = () => {
   };
 
   const hojeStr = new Date().toISOString().split('T')[0];
+  const agora = new Date();
+  const horaAtual = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
 
-  // Os agendamentos já vêm filtrados do backend diretamente da agenda (apenas futuros nas próximas 24h)
-  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
+  // Filtrar apenas agendamentos futuros (após a hora atual nas próximas 24h)
+  const agendamentosFuturos = dashboardData.agendamentos.filter(a => {
+    const [dataAno, dataMes, dataDia] = a.data.split('-');
+    const dataAgendamento = new Date(dataAno, parseInt(dataMes) - 1, dataDia);
+    const dataHoje = new Date(hojeStr);
+    
+    // Se a data é hoje, comparar com a hora atual
+    if (a.data === hojeStr) {
+      return a.hora > horaAtual;
+    }
+    // Se a data é no futuro (próximas 24h), incluir
+    return dataAgendamento > dataHoje;
+  });
+
+  const agendamentosLucas = agendamentosFuturos.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = agendamentosFuturos.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
@@ -94,7 +104,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Agenda em Tempo Real: Próximos agendamentos (Próximas 24h)</p>
+          <p className="text-gray-600">Próximos agendamentos (Próximas 24h)</p>
         </div>
       </div>
 
@@ -137,19 +147,19 @@ const DashboardContent = () => {
 
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Aguardando</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Próximas 24h</CardTitle>
             <Clock className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.servicosAguardando}
+              {dashboardData.agendamentos.length}
             </div>
-            <p className="text-xs text-gray-500 mt-1">próximas 24h (futuros)</p>
+            <p className="text-xs text-gray-500 mt-1">agendamentos a realizar</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros da Agenda) */}
+      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Lucas - Tabela */}
         <Card className="shadow-sm">
