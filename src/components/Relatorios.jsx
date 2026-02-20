@@ -146,6 +146,8 @@ const Relatorios = () => {
     );
   };
 
+  const totalReceita = byPayment.reduce((acc, curr) => acc + curr.valor, 0);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -353,6 +355,17 @@ const Relatorios = () => {
                       </div>
                     </div>
                   ))}
+                  <div className="pt-4 mt-2 border-t border-dashed border-gray-300">
+                    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="h-5 w-5 text-amber-600" />
+                        <span className="text-sm font-bold text-amber-900">RECEITA TOTAL</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-lg text-amber-700">R$ {totalReceita.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
