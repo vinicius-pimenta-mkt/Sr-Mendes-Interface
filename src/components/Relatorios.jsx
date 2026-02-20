@@ -68,17 +68,14 @@ const Relatorios = () => {
 
         if (response.ok) {
           const data = await response.json();
-          // Garantir que os dados do gráfico existam
           setServicosMaisVendidos(Array.isArray(data.by_service) ? data.by_service : []);
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
           
           if (Array.isArray(data.top_clients)) {
-            // Reforçar a ordenação no frontend por segurança
-            const sortedClients = [...data.top_clients].sort((a, b) => b.spent - a.spent);
             setFrequenciaClientes(
-              sortedClients.map(c => ({
+              data.top_clients.map(c => ({
                 nome: c.name,
                 visitas: c.visits,
                 gasto: c.spent
@@ -240,7 +237,7 @@ const Relatorios = () => {
                           <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[4, 4, 0, 0]} barSize={30} />
                         </>
                       ) : (
-                        <Bar name={barber} dataKey="total_qty" fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[4, 4, 0, 0]} barSize={50} />
+                        <Bar name={barber} dataKey={barber === 'Lucas' ? 'lucas_qty' : 'yuri_qty'} fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[4, 4, 0, 0]} barSize={50} />
                       )}
                     </BarChart>
                   </ResponsiveContainer>
