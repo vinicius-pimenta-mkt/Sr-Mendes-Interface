@@ -66,10 +66,25 @@ const DashboardContent = () => {
   };
 
   const hojeStr = new Date().toISOString().split('T')[0];
+  const agora = new Date();
+  const horaAtual = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
 
-  // Agendamentos futuros (já filtrados pelo backend como próximas 24h e após a hora atual)
-  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
+  // Filtrar apenas agendamentos futuros (após a hora atual nas próximas 24h)
+  const agendamentosFuturos = dashboardData.agendamentos.filter(a => {
+    const [dataAno, dataMes, dataDia] = a.data.split('-');
+    const dataAgendamento = new Date(dataAno, parseInt(dataMes) - 1, dataDia);
+    const dataHoje = new Date(hojeStr);
+    
+    // Se a data é hoje, comparar com a hora atual
+    if (a.data === hojeStr) {
+      return a.hora > horaAtual;
+    }
+    // Se a data é no futuro (próximas 24h), incluir
+    return dataAgendamento > dataHoje;
+  });
+
+  const agendamentosLucas = agendamentosFuturos.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = agendamentosFuturos.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
