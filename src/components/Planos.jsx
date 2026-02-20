@@ -29,32 +29,24 @@ import {
   Trash2,
   Edit,
   UserCheck,
-  IdCard,
-  Phone
+  IdCard
 } from 'lucide-react';
 
 const Planos = () => {
-  const planosConfig = [
-    { nome: 'PLANO MENSAL DE CORTE E BARBA (SOBRANCELHA INCLUSA)', cor: 'bg-green-50', border: 'border-green-100', text: 'text-green-700', iconColor: 'text-green-600' },
-    { nome: 'PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)', cor: 'bg-red-50', border: 'border-red-100', text: 'text-red-700', iconColor: 'text-red-600' },
-    { nome: 'PLANO CORTE MENSAL (SOBRANCELHA INCLUSA)', cor: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-700', iconColor: 'text-blue-600' },
-    { nome: 'PLANO CORTE E BARBA QUINZENAL (SOBRANCELHA INCLUSA)', cor: 'bg-yellow-50', border: 'border-yellow-100', text: 'text-yellow-700', iconColor: 'text-yellow-600' },
-    { nome: 'PLANO BARBA ILIMITADO (SOBRANCELHA INCLUSA)', cor: 'bg-gray-50', border: 'border-gray-100', text: 'text-gray-700', iconColor: 'text-gray-600' }
-  ];
-
+  // Dados extraídos do PDF para carga inicial (Fallback caso o banco esteja vazio)
   const dadosIniciais = [
-    { id: 'f1', nome: "Samuel junior pereira Braga", cpf: "161.208.026-06", telefone: "(31) 98765-4321", plano: "PLANO CORTE E BARBA QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "09/02", status: "Ativo", data_cadastro: "2026-02-09" },
-    { id: 'f2', nome: "JOEL HONORIO MENDES", cpf: "153.972.066-79", telefone: "(31) 98888-7777", plano: "PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "01/02", status: "Ativo", data_cadastro: "2026-02-01" },
-    { id: 'f3', nome: "Astrogildo Antunes", cpf: "036.928.906-48", telefone: "(31) 91111-2222", plano: "PLANO CORTE E BARBA QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "13/01", status: "Ativo", data_cadastro: "2026-01-13" },
-    { id: 'f4', nome: "Marcelo Augusto", cpf: "096.829.906-70", telefone: "(31) 93333-4444", plano: "PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "26/11", status: "Ativo", data_cadastro: "2025-11-26" },
-    { id: 'f5', nome: "Douglas Diego", cpf: "130.452.446-96", telefone: "(31) 95555-6666", plano: "PLANO BARBA ILIMITADO (SOBRANCELHA INCLUSA)", data_vencimento: "01/08", status: "Ativo", data_cadastro: "2025-08-01" },
-    { id: 'f6', nome: "Ulisses aparecido Ramos", cpf: "099.037.066-69", telefone: "(31) 97777-8888", plano: "PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "15/07", status: "Ativo", data_cadastro: "2025-07-15" },
-    { id: 'f7', nome: "Lucas Alberto", cpf: "136.022.826-86", telefone: "(31) 99999-0000", plano: "PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "06/06", status: "Ativo", data_cadastro: "2025-06-06" },
-    { id: 'f8', nome: "Emerson Charles De Oliveira Silva", cpf: "126.733.526-27", telefone: "(31) 92222-3333", plano: "PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "23/04", status: "Ativo", data_cadastro: "2025-04-23" },
-    { id: 'f9', nome: "Katriel Castro silva", cpf: "174.618.446-95", telefone: "(31) 94444-5555", plano: "PLANO CORTE E BARBA QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "18/04", status: "Ativo", data_cadastro: "2025-04-18" },
-    { id: 'f10', nome: "Rian James", cpf: "099.299.416-06", telefone: "(31) 96666-7777", plano: "PLANO CORTE MENSAL (SOBRANCELHA INCLUSA)", data_vencimento: "12/04", status: "Ativo", data_cadastro: "2025-04-12" },
-    { id: 'f11', nome: "Gabriel alves Parreiras", cpf: "135.503.866-99", telefone: "(31) 98888-9999", plano: "PLANO CORTE QUINZENAL (SOBRANCELHA INCLUSA)", data_vencimento: "28/03", status: "Ativo", data_cadastro: "2025-03-28" },
-    { id: 'f12', nome: "Alexandre José Pereira Pinto", cpf: "113.100.246-69", telefone: "(31) 90000-1111", plano: "PLANO CORTE MENSAL (SOBRANCELHA INCLUSA)", data_vencimento: "22/03", status: "Ativo", data_cadastro: "2025-03-22" }
+    { id: 'f1', nome: "Samuel junior pereira Braga", cpf: "161.208.026-06", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "09/02", status: "Ativo", data_cadastro: "2026-02-09" },
+    { id: 'f2', nome: "JOEL HONORIO MENDES", cpf: "153.972.066-79", plano: "PLANO CORTE QUINZENAL", data_vencimento: "01/02", status: "Ativo", data_cadastro: "2026-02-01" },
+    { id: 'f3', nome: "Astrogildo Antunes", cpf: "036.928.906-48", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "13/01", status: "Ativo", data_cadastro: "2026-01-13" },
+    { id: 'f4', nome: "Marcelo Augusto", cpf: "096.829.906-70", plano: "PLANO CORTE QUINZENAL", data_vencimento: "26/11", status: "Ativo", data_cadastro: "2025-11-26" },
+    { id: 'f5', nome: "Douglas Diego", cpf: "130.452.446-96", plano: "PLANO BARBA ILIMITADO", data_vencimento: "01/08", status: "Ativo", data_cadastro: "2025-08-01" },
+    { id: 'f6', nome: "Ulisses aparecido Ramos", cpf: "099.037.066-69", plano: "PLANO CORTE QUINZENAL", data_vencimento: "15/07", status: "Ativo", data_cadastro: "2025-07-15" },
+    { id: 'f7', nome: "Lucas Alberto", cpf: "136.022.826-86", plano: "PLANO CORTE QUINZENAL", data_vencimento: "06/06", status: "Ativo", data_cadastro: "2025-06-06" },
+    { id: 'f8', nome: "Emerson Charles De Oliveira Silva", cpf: "126.733.526-27", plano: "PLANO CORTE QUINZENAL", data_vencimento: "23/04", status: "Ativo", data_cadastro: "2025-04-23" },
+    { id: 'f9', nome: "Katriel Castro silva", cpf: "174.618.446-95", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "18/04", status: "Ativo", data_cadastro: "2025-04-18" },
+    { id: 'f10', nome: "Rian James", cpf: "099.299.416-06", plano: "PLANO CORTE MENSAL", data_vencimento: "12/04", status: "Ativo", data_cadastro: "2025-04-12" },
+    { id: 'f11', nome: "Gabriel alves Parreiras", cpf: "135.503.866-99", plano: "PLANO CORTE QUINZENAL", data_vencimento: "28/03", status: "Ativo", data_cadastro: "2025-03-28" },
+    { id: 'f12', nome: "Alexandre José Pereira Pinto", cpf: "113.100.246-69", plano: "PLANO CORTE MENSAL", data_vencimento: "22/03", status: "Ativo", data_cadastro: "2025-03-22" }
   ];
 
   const [assinantes, setAssinantes] = useState([]);
@@ -66,13 +58,20 @@ const Planos = () => {
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
-    telefone: '',
-    plano: 'PLANO CORTE MENSAL (SOBRANCELHA INCLUSA)',
+    plano: 'PLANO CORTE MENSAL',
     data_vencimento: '',
     ultimo_pagamento: '',
     forma_pagamento: 'Pix',
     status: 'Ativo'
   });
+
+  const planosDisponiveis = [
+    'PLANO MENSAL DE CORTE E BARBA',
+    'PLANO CORTE QUINZENAL',
+    'PLANO CORTE MENSAL',
+    'PLANO CORTE E BARBA QUINZENAL',
+    'PLANO BARBA ILIMITADO'
+  ];
 
   const formasPagamento = ['Pix', 'Dinheiro', 'Cartão de Débito', 'Cartão de Crédito'];
 
@@ -88,6 +87,7 @@ const Planos = () => {
       });
       if (response.ok) {
         const data = await response.json();
+        // Se o banco estiver vazio, usa os dados do PDF como inicial
         setAssinantes(data.length > 0 ? data : dadosIniciais);
       } else {
         setAssinantes(dadosIniciais);
@@ -151,8 +151,7 @@ const Planos = () => {
     setFormData({
       nome: '',
       cpf: '',
-      telefone: '',
-      plano: 'PLANO CORTE MENSAL (SOBRANCELHA INCLUSA)',
+      plano: 'PLANO CORTE MENSAL',
       data_vencimento: '',
       ultimo_pagamento: '',
       forma_pagamento: 'Pix',
@@ -166,7 +165,6 @@ const Planos = () => {
     setFormData({
       nome: assinante.nome,
       cpf: assinante.cpf,
-      telefone: assinante.telefone || '',
       plano: assinante.plano,
       data_vencimento: assinante.data_vencimento,
       ultimo_pagamento: assinante.ultimo_pagamento || '',
@@ -178,12 +176,11 @@ const Planos = () => {
 
   const filtrados = assinantes.filter(a => 
     a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (a.cpf && a.cpf.includes(searchTerm)) ||
-    (a.telefone && a.telefone.includes(searchTerm))
+    (a.cpf && a.cpf.includes(searchTerm))
   );
 
-  const assinantesPorPlano = planosConfig.reduce((acc, plano) => {
-    acc[plano.nome] = filtrados.filter(a => a.plano === plano.nome);
+  const assinantesPorPlano = planosDisponiveis.reduce((acc, plano) => {
+    acc[plano] = filtrados.filter(a => a.plano === plano);
     return acc;
   }, {});
 
@@ -201,7 +198,7 @@ const Planos = () => {
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
-              placeholder="Buscar por nome, CPF ou Telefone..." 
+              placeholder="Buscar por nome ou CPF..." 
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -224,20 +221,16 @@ const Planos = () => {
                     <Label>Nome Completo</Label>
                     <Input required value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 col-span-2">
                     <Label>CPF</Label>
                     <Input required placeholder="000.000.000-00" value={formData.cpf} onChange={(e) => setFormData({...formData, cpf: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Telefone</Label>
-                    <Input placeholder="(00) 00000-0000" value={formData.telefone} onChange={(e) => setFormData({...formData, telefone: e.target.value})} />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Plano</Label>
                     <Select value={formData.plano} onValueChange={(v) => setFormData({...formData, plano: v})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {planosConfig.map(p => <SelectItem key={p.nome} value={p.nome}>{p.nome}</SelectItem>)}
+                        {planosDisponiveis.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -279,53 +272,48 @@ const Planos = () => {
       </div>
 
       <div className="space-y-8">
-        {planosConfig.map(plano => (
-          <Card key={plano.nome} className={`shadow-sm border-none ${plano.cor} overflow-hidden`}>
-            <CardHeader className="bg-white/50 border-b py-4">
+        {planosDisponiveis.map(plano => (
+          <Card key={plano} className="shadow-sm border-none bg-white overflow-hidden">
+            <CardHeader className="bg-gray-50/50 border-b py-4">
               <CardTitle className="text-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <UserCheck className={`h-5 w-5 ${plano.iconColor}`} />
-                  <span className={`font-black text-sm ${plano.text}`}>{plano.nome}</span>
+                  <UserCheck className="h-5 w-5 text-amber-600" />
+                  <span className="font-bold">{plano}</span>
                 </div>
-                <Badge variant="secondary" className="bg-white text-gray-700 border shadow-sm">
-                  {assinantesPorPlano[plano.nome].length} {assinantesPorPlano[plano.nome].length === 1 ? 'assinante' : 'assinantes'}
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                  {assinantesPorPlano[plano].length} {assinantesPorPlano[plano].length === 1 ? 'assinante' : 'assinantes'}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-[10px] text-gray-500 uppercase bg-white/30 border-b">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-50/30 border-b">
                     <tr>
                       <th className="px-6 py-4">Assinante</th>
-                      <th className="px-6 py-4">CPF / Telefone</th>
+                      <th className="px-6 py-4">CPF</th>
                       <th className="px-6 py-4">Vencimento</th>
                       <th className="px-6 py-4">Última Visita</th>
                       <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4 text-right">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100/50">
-                    {assinantesPorPlano[plano.nome].length === 0 ? (
+                  <tbody className="divide-y divide-gray-100">
+                    {assinantesPorPlano[plano].length === 0 ? (
                       <tr>
                         <td colSpan="6" className="px-6 py-10 text-center text-gray-400 italic">Nenhum assinante ativo neste plano.</td>
                       </tr>
                     ) : (
-                      assinantesPorPlano[plano.nome].map((a) => (
-                        <tr key={a.id} className="hover:bg-white/40 transition-colors group">
+                      assinantesPorPlano[plano].map((a) => (
+                        <tr key={a.id} className="hover:bg-gray-50/50 transition-colors group">
                           <td className="px-6 py-4">
                             <span className="font-bold text-gray-900 block">{a.nome}</span>
-                            <span className="text-[10px] text-gray-400 italic">ID: {a.id}</span>
+                            <span className="text-[10px] text-gray-400">Cadastrado em: {new Date(a.data_cadastro).toLocaleDateString('pt-BR')}</span>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="flex items-center gap-1 text-xs text-gray-600">
-                                <IdCard className="h-3 w-3 text-gray-400" /> {a.cpf || '--'}
-                              </span>
-                              <span className="flex items-center gap-1 text-[10px] text-gray-500">
-                                <Phone className="h-3 w-3 text-gray-400" /> {a.telefone || '--'}
-                              </span>
-                            </div>
+                            <span className="flex items-center gap-1 text-gray-600">
+                              <IdCard className="h-3 w-3 text-gray-400" /> {a.cpf || '--'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 font-bold text-amber-600">{a.data_vencimento || '--'}</td>
                           <td className="px-6 py-4">
