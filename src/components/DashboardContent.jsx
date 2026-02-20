@@ -67,7 +67,7 @@ const DashboardContent = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-  // Agendamentos futuros (já filtrados pelo backend como próximas 24h)
+  // Agendamentos futuros (já filtrados pelo backend como próximas 24h e após a hora atual)
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
@@ -89,7 +89,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Visão geral e próximos agendamentos (24h)</p>
+          <p className="text-gray-600">Próximos agendamentos (Próximas 24h)</p>
         </div>
       </div>
 
@@ -139,7 +139,7 @@ const DashboardContent = () => {
             <div className="text-2xl font-bold text-gray-900">
               {dashboardData.agendamentos.length}
             </div>
-            <p className="text-xs text-gray-500 mt-1">agendamentos futuros</p>
+            <p className="text-xs text-gray-500 mt-1">agendamentos a realizar</p>
           </CardContent>
         </Card>
       </div>
