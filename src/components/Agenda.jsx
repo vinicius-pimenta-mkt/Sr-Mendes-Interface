@@ -35,7 +35,8 @@ import {
   CalendarDays,
   Filter,
   User,
-  CreditCard
+  CreditCard,
+  Phone
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -45,11 +46,11 @@ const Agenda = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState(null);
-  // Por padrão, seleciona o dia de hoje
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
     cliente_nome: '',
+    cliente_telefone: '',
     servico: '',
     data: format(new Date(), 'yyyy-MM-dd'),
     hora: '',
@@ -192,6 +193,7 @@ const Agenda = () => {
   const resetForm = () => {
     setFormData({
       cliente_nome: '',
+      cliente_telefone: '',
       servico: '',
       data: format(selectedDate || new Date(), 'yyyy-MM-dd'),
       hora: '',
@@ -208,6 +210,7 @@ const Agenda = () => {
     setEditingAgendamento(agendamento);
     setFormData({
       cliente_nome: agendamento?.cliente_nome ?? '',
+      cliente_telefone: agendamento?.cliente_telefone ?? '',
       servico: agendamento?.servico ?? '',
       data: agendamento?.data ?? '',
       hora: agendamento?.hora ?? '',
@@ -277,7 +280,14 @@ const Agenda = () => {
                   filtrados.map((a) => (
                     <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-bold text-gray-900">{a.hora.substring(0, 5)}</td>
-                      <td className="px-4 py-3 font-medium text-gray-700">{a.cliente_nome}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-700">{a.cliente_nome}</span>
+                          <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                            <Phone className="h-2 w-2" /> {a.cliente_telefone || 'Sem tel.'}
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-gray-600">{a.servico}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
@@ -373,6 +383,14 @@ const Agenda = () => {
                     />
                   </div>
                   <div className="space-y-2 col-span-2">
+                    <Label>Telefone do Cliente</Label>
+                    <Input 
+                      value={formData.cliente_telefone} 
+                      onChange={(e) => setFormData({...formData, cliente_telefone: e.target.value})}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
                     <Label>Serviço</Label>
                     <Select value={formData.servico} onValueChange={handleServicoChange}>
                       <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
@@ -428,16 +446,19 @@ const Agenda = () => {
                     </Select>
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white py-6">
-                  {editingAgendamento ? 'Salvar Alterações' : 'Confirmar Agendamento'}
-                </Button>
+                <div className="flex justify-end gap-3 pt-6 border-t">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+                  <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white">
+                    {editingAgendamento ? 'Salvar Alterações' : 'Criar Agendamento'}
+                  </Button>
+                </div>
               </form>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="flex flex-col lg:flex-row gap-6">
         {renderTable('Lucas')}
         {renderTable('Yuri')}
       </div>
