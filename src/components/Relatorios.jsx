@@ -307,42 +307,6 @@ const Relatorios = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <CreditCard className="h-5 w-5 text-blue-600" /> Receita por Forma de Pagamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {byPayment.length > 0 ? (
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={byPayment}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="valor"
-                          nameKey="forma"
-                        >
-                          {byPayment.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(v) => `R$ ${v.toLocaleString('pt-BR')}`} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-400 py-10 italic">Sem dados de pagamento.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader>
                 <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
               </CardHeader>
               <CardContent>
@@ -386,6 +350,42 @@ const Relatorios = () => {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CreditCard className="h-5 w-5 text-blue-600" /> Receita por Forma de Pagamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {byPayment.length > 0 ? (
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={byPayment}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="valor"
+                          nameKey="forma"
+                        >
+                          {byPayment.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v) => `R$ ${v.toLocaleString('pt-BR')}`} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-400 py-10 italic">Sem dados de pagamento.</p>
+                )}
               </CardContent>
             </Card>
           </div>
