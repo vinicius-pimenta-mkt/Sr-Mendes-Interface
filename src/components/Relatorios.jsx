@@ -68,13 +68,17 @@ const Relatorios = () => {
 
         if (response.ok) {
           const data = await response.json();
+          // Garantir que os dados do gráfico existam
           setServicosMaisVendidos(Array.isArray(data.by_service) ? data.by_service : []);
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
+          
           if (Array.isArray(data.top_clients)) {
+            // Reforçar a ordenação no frontend por segurança
+            const sortedClients = [...data.top_clients].sort((a, b) => b.spent - a.spent);
             setFrequenciaClientes(
-              data.top_clients.map(c => ({
+              sortedClients.map(c => ({
                 nome: c.name,
                 visitas: c.visits,
                 gasto: c.spent
@@ -106,7 +110,7 @@ const Relatorios = () => {
           {payload.map((entry, index) => (
             <p key={index} className="text-sm flex items-center gap-2" style={{ color: entry.color }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
-              {entry.name}: {entry.name.includes('Receita') || entry.name.includes('Valor') ? `R$ ${entry.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : entry.value}
+              {entry.name}: {entry.name.includes('Receita') || entry.name.includes('Valor') || entry.name.includes('Gasto') ? `R$ ${entry.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : entry.value}
             </p>
           ))}
         </div>
@@ -147,8 +151,6 @@ const Relatorios = () => {
   };
 
   const totalReceita = byPayment.reduce((acc, curr) => acc + curr.valor, 0);
-  // Comissão de 45% para o Yuri (65% é descontado, sobra 45% - observação do usuário: "valor total subtraído por 65%, apresentando apenas 45%")
-  // Na verdade, 100% - 65% = 35%. Mas o usuário disse "apresentando apenas 45%". Vou seguir o valor percentual de 45% solicitado.
   const comissaoYuri = totalReceita * 0.45;
 
   if (loading) {
