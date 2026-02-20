@@ -26,6 +26,7 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // Atualizar a cada minuto para manter o tempo sincronizado
     const interval = setInterval(fetchDashboardData, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -54,6 +55,11 @@ const DashboardContent = () => {
     return hora.substring(0, 5);
   };
 
+  const formatarData = (dataStr) => {
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}`;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Confirmado': return 'bg-green-100 text-green-800';
@@ -63,30 +69,36 @@ const DashboardContent = () => {
     }
   };
 
-  // Filtragem inteligente: Somente agendamentos a partir da hora atual (Futuros)
-  const agendamentosFuturos = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora >= dashboardData.agoraHora);
-  
-  const agendamentosLucas = agendamentosFuturos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = agendamentosFuturos.filter(a => a.barber === 'Yuri');
+  const hojeStr = new Date().toISOString().split('T')[0];
+
+  // AGENDAMENTOS JÁ VÊM FILTRADOS DAS PRÓXIMAS 24H DA AGENDA BRUTA DO BACKEND
+  // Inclui tanto pendentes quanto confirmados, ordenados por hora
+  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Dashboard Title */}
       <div className="flex items-center space-x-4">
-        <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
+        <img src={logo} alt="Beleza Masculina" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Visão geral de hoje - {new Date().toLocaleDateString('pt-BR')}</p>
+          <p className="text-gray-600">Próximos agendamentos (Próximas 24h)</p>
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border-l-4 border-l-yellow-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -95,7 +107,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.atendimentosHoje}</div>
-            <p className="text-xs text-gray-500 mt-1">agendamentos marcados</p>
+            <p className="text-xs text-gray-500 mt-1 uppercase font-bold">agendamentos marcados</p>
           </CardContent>
         </Card>
 
@@ -106,9 +118,9 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-gray-500 mt-1">serviços já passados</p>
+            <p className="text-xs text-gray-500 mt-1 uppercase font-bold">confirmados até agora</p>
           </CardContent>
         </Card>
 
@@ -119,23 +131,27 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
-            <p className="text-xs text-gray-500 mt-1">horário anterior a agora</p>
+            <p className="text-xs text-gray-500 mt-1 uppercase font-bold">horário já passou hoje</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 uppercase font-bold">Aguardando</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 uppercase font-bold">Aguardando (24h)</CardTitle>
             <Clock className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosAguardando}</div>
-            <p className="text-xs text-gray-500 mt-1">próximos do dia</p>
+            <div className="text-2xl font-bold text-gray-900">
+              {dashboardData.servicosAguardando}
+            </div>
+            <p className="text-xs text-gray-500 mt-1 uppercase font-bold">agendamentos futuros</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Lucas - Tabela */}
         <Card className="shadow-lg border-none overflow-hidden">
           <CardHeader className="bg-amber-500 text-white p-6">
             <div className="flex items-center justify-between">
@@ -143,7 +159,7 @@ const DashboardContent = () => {
                 <User className="h-6 w-6" /> Próximos: Lucas
               </CardTitle>
               <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-bold">
-                {agendamentosLucas.length} Pendentes
+                {agendamentosLucas.length} Agendamentos
               </span>
             </div>
           </CardHeader>
@@ -162,7 +178,10 @@ const DashboardContent = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-amber-600 text-lg">{formatarHorario(a.hora)}</p>
+                      <p className="font-black text-amber-600 text-lg">
+                        {formatarHorario(a.hora)} 
+                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                      </p>
                       <Badge className={`${getStatusColor(a.status)} font-bold text-[10px] uppercase`}>
                         {a.status}
                       </Badge>
@@ -170,12 +189,13 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-12 text-center text-gray-400 italic font-medium">Nenhum agendamento futuro para Lucas hoje.</div>
+                <div className="p-12 text-center text-gray-400 italic font-medium uppercase">Nenhum agendamento futuro nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
         </Card>
 
+        {/* Yuri - Tabela */}
         <Card className="shadow-lg border-none overflow-hidden">
           <CardHeader className="bg-green-600 text-white p-6">
             <div className="flex items-center justify-between">
@@ -183,7 +203,7 @@ const DashboardContent = () => {
                 <User className="h-6 w-6" /> Próximos: Yuri
               </CardTitle>
               <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-bold">
-                {agendamentosYuri.length} Pendentes
+                {agendamentosYuri.length} Agendamentos
               </span>
             </div>
           </CardHeader>
@@ -202,7 +222,10 @@ const DashboardContent = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-green-600 text-lg">{formatarHorario(a.hora)}</p>
+                      <p className="font-black text-green-600 text-lg">
+                        {formatarHorario(a.hora)}
+                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                      </p>
                       <Badge className={`${getStatusColor(a.status)} font-bold text-[10px] uppercase`}>
                         {a.status}
                       </Badge>
@@ -210,7 +233,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-12 text-center text-gray-400 italic font-medium">Nenhum agendamento futuro para Yuri hoje.</div>
+                <div className="p-12 text-center text-gray-400 italic font-medium uppercase">Nenhum agendamento futuro nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
