@@ -18,6 +18,7 @@ const DashboardContent = () => {
     atendimentosHoje: 0,
     receitaDia: 0,
     servicosRealizados: 0,
+    servicosAguardando: 0,
     agendamentos: [],
     agoraHora: "00:00"
   });
@@ -25,6 +26,9 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // Atualizar a cada 5 minutos para manter o dashboard fresco
+    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -66,25 +70,10 @@ const DashboardContent = () => {
   };
 
   const hojeStr = new Date().toISOString().split('T')[0];
-  const agora = new Date();
-  const horaAtual = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
 
-  // Filtrar apenas agendamentos futuros (após a hora atual nas próximas 24h)
-  const agendamentosFuturos = dashboardData.agendamentos.filter(a => {
-    const [dataAno, dataMes, dataDia] = a.data.split('-');
-    const dataAgendamento = new Date(dataAno, parseInt(dataMes) - 1, dataDia);
-    const dataHoje = new Date(hojeStr);
-    
-    // Se a data é hoje, comparar com a hora atual
-    if (a.data === hojeStr) {
-      return a.hora > horaAtual;
-    }
-    // Se a data é no futuro (próximas 24h), incluir
-    return dataAgendamento > dataHoje;
-  });
-
-  const agendamentosLucas = agendamentosFuturos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = agendamentosFuturos.filter(a => a.barber === 'Yuri');
+  // Os agendamentos já vêm filtrados do backend (apenas futuros nas próximas 24h)
+  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
@@ -147,14 +136,14 @@ const DashboardContent = () => {
 
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Próximas 24h</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Aguardando</CardTitle>
             <Clock className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.agendamentos.length}
+              {dashboardData.servicosAguardando}
             </div>
-            <p className="text-xs text-gray-500 mt-1">agendamentos a realizar</p>
+            <p className="text-xs text-gray-500 mt-1">próximas 24h (futuros)</p>
           </CardContent>
         </Card>
       </div>
