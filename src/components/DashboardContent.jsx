@@ -51,6 +51,11 @@ const DashboardContent = () => {
     return hora.substring(0, 5);
   };
 
+  const formatarData = (dataStr) => {
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}`;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Confirmado': return 'bg-green-100 text-green-800';
@@ -60,22 +65,11 @@ const DashboardContent = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
-      case 'Pendente':   return <Clock className="h-4 w-4" />;
-      case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
-      default:           return <Clock className="h-4 w-4" />;
-    }
-  };
+  const hojeStr = new Date().toISOString().split('T')[0];
 
-  // Filtragem inteligente: Aguardando vs Realizados
-  // Filtramos apenas por HORA para determinar se está aguardando ou já passou (realizado)
-  const agendamentosAguardando = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora >= dashboardData.agoraHora);
-  const agendamentosRealizados = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora < dashboardData.agoraHora);
-
-  const agendamentosLucas = agendamentosAguardando.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = agendamentosAguardando.filter(a => a.barber === 'Yuri');
+  // Agendamentos futuros (já filtrados pelo backend como próximas 24h)
+  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
@@ -95,7 +89,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Visão geral de hoje - {new Date().toLocaleDateString('pt-BR')}</p>
+          <p className="text-gray-600">Visão geral e próximos agendamentos (24h)</p>
         </div>
       </div>
 
@@ -121,7 +115,7 @@ const DashboardContent = () => {
             <div className="text-2xl font-bold text-gray-900">
               R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-gray-500 mt-1">faturamento confirmado</p>
+            <p className="text-xs text-gray-500 mt-1">faturamento confirmado hoje</p>
           </CardContent>
         </Card>
 
@@ -131,21 +125,21 @@ const DashboardContent = () => {
             <CheckCircle className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{agendamentosRealizados.length}</div>
-            <p className="text-xs text-gray-500 mt-1">horário já passou ou concluído</p>
+            <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
+            <p className="text-xs text-gray-500 mt-1">horário já passou ou concluído hoje</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Aguardando</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Próximas 24h</CardTitle>
             <Clock className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {agendamentosAguardando.length}
+              {dashboardData.agendamentos.length}
             </div>
-            <p className="text-xs text-gray-500 mt-1">próximos clientes do dia</p>
+            <p className="text-xs text-gray-500 mt-1">agendamentos futuros</p>
           </CardContent>
         </Card>
       </div>
@@ -175,7 +169,10 @@ const DashboardContent = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900 text-lg">{formatarHorario(a.hora)}</p>
+                      <p className="font-bold text-gray-900 text-lg">
+                        {formatarHorario(a.hora)} 
+                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                      </p>
                       <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
                         {a.status}
                       </Badge>
@@ -183,7 +180,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Lucas hoje.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Lucas nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
@@ -212,7 +209,10 @@ const DashboardContent = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900 text-lg">{formatarHorario(a.hora)}</p>
+                      <p className="font-bold text-gray-900 text-lg">
+                        {formatarHorario(a.hora)}
+                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                      </p>
                       <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
                         {a.status}
                       </Badge>
@@ -220,7 +220,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Yuri hoje.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Yuri nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
