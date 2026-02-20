@@ -147,6 +147,9 @@ const Relatorios = () => {
   };
 
   const totalReceita = byPayment.reduce((acc, curr) => acc + curr.valor, 0);
+  // Comissão de 45% para o Yuri (65% é descontado, sobra 45% - observação do usuário: "valor total subtraído por 65%, apresentando apenas 45%")
+  // Na verdade, 100% - 65% = 35%. Mas o usuário disse "apresentando apenas 45%". Vou seguir o valor percentual de 45% solicitado.
+  const comissaoYuri = totalReceita * 0.45;
 
   if (loading) {
     return (
@@ -255,8 +258,8 @@ const Relatorios = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {(barber === 'Geral' || barber === 'Lucas') && renderTabelaServicos('Lucas', servicosMaisVendidos)}
-                {(barber === 'Geral' || barber === 'Yuri') && renderTabelaServicos('Yuri', servicosMaisVendidos)}
+                {renderTabelaServicos('Lucas', servicosMaisVendidos)}
+                {renderTabelaServicos('Yuri', servicosMaisVendidos)}
               </div>
             </CardContent>
           </Card>
@@ -355,16 +358,31 @@ const Relatorios = () => {
                       </div>
                     </div>
                   ))}
-                  <div className="pt-4 mt-2 border-t border-dashed border-gray-300">
+                  
+                  <div className="pt-4 mt-2 border-t border-dashed border-gray-300 space-y-3">
                     <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
                       <div className="flex items-center gap-3">
                         <DollarSign className="h-5 w-5 text-amber-600" />
-                        <span className="text-sm font-bold text-amber-900">RECEITA TOTAL</span>
+                        <span className="text-sm font-bold text-amber-900">
+                          {barber === 'Yuri' ? 'TOTAL BRUTO' : 'RECEITA TOTAL'}
+                        </span>
                       </div>
                       <div className="text-right">
                         <p className="font-black text-lg text-amber-700">R$ {totalReceita.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                       </div>
                     </div>
+
+                    {barber === 'Yuri' && (
+                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                        <div className="flex items-center gap-3">
+                          <Badge className="bg-green-600">45%</Badge>
+                          <span className="text-sm font-bold text-green-900">TOTAL LÍQUIDO (COMISSÃO)</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-lg text-green-700">R$ {comissaoYuri.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
