@@ -62,27 +62,27 @@ const Agenda = () => {
   });
 
   const tabelaPrecos = {
-    'Sobrancelha': 20,
-    'Selagem': 100,
-    'Relaxamento': 80,
+    'Sobrancelha': 15,
+    'Selagem': 65,
+    'Relaxamento': 45,
     'Pigmentação': 30,
-    'Acabamento (Pezinho)': 15,
-    'Luzes': 120,
+    'Acabamento (Pezinho)': 25,
+    'Luzes': 100,
     'Limpeza de pele': 40,
-    'Hidratação': 35,
+    'Hidratação': 40,
     'Finalização penteado': 25,
-    'Corte+ Sobrancelha': 55,
+    'Corte + Sobrancelha': 60,
     'Corte Masculino': 45,
-    'Raspar na maquina': 30,
-    'Corte infantil no carrinho': 40,
-    'Corte infantil': 35,
-    'Corte + Barba simples': 75,
+    'Raspar na maquina': 35,
+    'Corte infantil no carrinho': 50,
+    'Corte infantil': 50,
+    'Corte + Barba simples': 80,
     'Combo Corte + Barboterapia': 90,
-    'Combo Corte + Barba + Sobrancelha': 100,
-    'Coloração': 60,
+    'Combo Corte + Barba + Sobrancelha': 90,
+    'Coloração': 35,
     'Barboterapia': 50,
-    'Barba Simples': 35,
-    'Tratamento V.O': 70
+    'Barba Simples': 40,
+    'Tratamento V.O': 90
   };
 
   const servicos = Object.keys(tabelaPrecos);
