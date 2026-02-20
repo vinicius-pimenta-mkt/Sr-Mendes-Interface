@@ -70,8 +70,9 @@ const DashboardContent = () => {
   };
 
   // Filtragem inteligente: Aguardando vs Realizados
-  const agendamentosAguardando = dashboardData.agendamentos.filter(a => a.status === 'Pendente' && a.hora >= dashboardData.agoraHora);
-  const agendamentosRealizados = dashboardData.agendamentos.filter(a => a.status === 'Confirmado' || (a.status === 'Pendente' && a.hora < dashboardData.agoraHora));
+  // Filtramos apenas por HORA para determinar se está aguardando ou já passou (realizado)
+  const agendamentosAguardando = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora >= dashboardData.agoraHora);
+  const agendamentosRealizados = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora < dashboardData.agoraHora);
 
   const agendamentosLucas = agendamentosAguardando.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = agendamentosAguardando.filter(a => a.barber === 'Yuri');
