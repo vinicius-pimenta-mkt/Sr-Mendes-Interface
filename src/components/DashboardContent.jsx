@@ -26,6 +26,9 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // Atualizar a cada 5 minutos para manter a hora atualizada
+    const interval = setInterval(fetchDashboardData, 300000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -66,7 +69,11 @@ const DashboardContent = () => {
     }
   };
 
-  const hojeStr = new Date().toISOString().split('T')[0];
+  // Obtém a data de hoje no formato YYYY-MM-DD considerando fuso local
+  const hoje = new Date();
+  const hojeStr = hoje.getFullYear() + '-' + 
+                 String(hoje.getMonth() + 1).padStart(2, '0') + '-' + 
+                 String(hoje.getDate()).padStart(2, '0');
 
   // Agendamentos futuros filtrados pelo backend
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
