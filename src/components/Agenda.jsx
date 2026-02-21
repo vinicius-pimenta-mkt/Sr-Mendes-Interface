@@ -163,14 +163,15 @@ const Agenda = () => {
     }
   };
 
-  // Gerador de Slots para Bloqueio com correção de Fuso Horário e Block_ID
+  // Gerador de Slots para Bloqueio Blindado contra Fuso Horário
   const gerarSlotsBloqueio = (blockId) => {
     const slots = [];
     const [yearIni, monthIni, dayIni] = blockData.data_inicio.split('-').map(Number);
     const [yearFim, monthFim, dayFim] = blockData.data_fim.split('-').map(Number);
     
-    const dIni = new Date(yearIni, monthIni - 1, dayIni);
-    const dFim = new Date(yearFim, monthFim - 1, dayFim);
+    // Forçando a data ao meio-dia para o Javascript não jogar o dia para trás acidentalmente
+    const dIni = new Date(yearIni, monthIni - 1, dayIni, 12, 0, 0);
+    const dFim = new Date(yearFim, monthFim - 1, dayFim, 12, 0, 0);
     
     for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
       const dataStr = format(d, 'yyyy-MM-dd');
@@ -194,8 +195,14 @@ const Agenda = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const blockId = 'block_' + Date.now(); // Identificador único deste grupo de bloqueio
+      const blockId = 'block_' + Date.now();
       const slots = gerarSlotsBloqueio(blockId);
+      
+      if (slots.length === 0) {
+        alert("Nenhum horário selecionado. Verifique os horários e datas de início e fim.");
+        return;
+      }
+
       const requests = [];
       
       if (blockData.barber === 'Lucas' || blockData.barber === 'Ambos') {
@@ -213,11 +220,21 @@ const Agenda = () => {
         }));
       }
 
-      await Promise.all(requests);
+      const responses = await Promise.all(requests);
+      
+      // Validador de falha silenciosa (Avisa na tela se o backend rejeitar)
+      const hasError = responses.find(r => !r.ok);
+      if (hasError) {
+        alert("Erro no servidor! Provavelmente o backend ainda não foi atualizado na Easypanel.\nPor favor, faça um novo Deploy no servidor e tente novamente.");
+        return;
+      }
+
+      alert(`${slots.length} horários foram bloqueados com sucesso!`);
       fetchAgendamentos();
       setBlockDialogOpen(false);
     } catch (error) {
       console.error('Erro ao bloquear agenda:', error);
+      alert("Erro de conexão ao tentar bloquear a agenda.");
     }
   };
 
@@ -228,9 +245,8 @@ const Agenda = () => {
       ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
       : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
-    // Se for um bloco de agenda, pergunta se apaga tudo
     if (agendamento.status === 'Bloqueado' && agendamento.observacoes?.startsWith('block_')) {
-      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir a rotina completa (todos os dias/horários desse bloqueio).\n\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
+      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir o bloco COMPLETO.\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
       
       if (deleteGroup) {
         try {
@@ -239,13 +255,12 @@ const Agenda = () => {
             headers: { 'Authorization': `Bearer ${token}` },
           });
           if (response.ok) fetchAgendamentos();
-        } catch (error) { console.error('Erro ao remover bloco completo', error); }
+        } catch (error) { console.error('Erro ao remover bloco', error); }
         return;
       } else {
-        if (!confirm('Confirmar liberação APENAS deste horário específico?')) return;
+        if (!confirm('Tem certeza que deseja liberar APENAS este horário?')) return;
       }
     } else {
-      // Exclusão normal
       if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
     }
 
