@@ -15,20 +15,20 @@ import logo from '../assets/logo.png';
 
 const DashboardContent = () => {
   const [dashboardData, setDashboardData] = useState({
-    atendimentosHoje: 0,
-    receitaDia: 0,
-    servicosRealizados: 0,
-    servicosAguardando: 0,
+    total_hoje: 0,
+    receita_dia: 0,
+    servicos_realizados: 0,
+    aguardando: 0,
     agendamentos: [],
-    agoraHora: "00:00",
-    hoje: "", // Adicionado para receber a data de hoje do backend
-    amanha: "" // Adicionado para receber a data de amanhã do backend
+    agora: "00:00",
+    hoje: "",
+    amanha: ""
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
-    // Atualizar a cada 5 minutos para manter o dashboard sincronizado com a agenda em tempo real
+    // Atualizar a cada 5 minutos para manter o dashboard sincronizado
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -36,7 +36,6 @@ const DashboardContent = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      // Endpoint de relatorios que agora unifica dados históricos e futuros
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -45,6 +44,7 @@ const DashboardContent = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Frontend] Dados recebidos do backend:', data);
         setDashboardData(data);
       } else {
         console.error('Erro na resposta:', response.status);
@@ -74,11 +74,11 @@ const DashboardContent = () => {
     }
   };
 
-  // Os agendamentos já vêm filtrados do backend (apenas futuros nas próximas 24h)
+  // Separa agendamentos por barbeiro - dados já vêm filtrados do backend
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
-  // Função para obter o label correto da data, usando as datas de referência do backend
+  // Função para obter o label correto da data
   const getDataLabel = (data) => {
     if (data === dashboardData.hoje) {
       return 'Hoje';
@@ -113,17 +113,19 @@ const DashboardContent = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total de Agendamentos */}
         <Card className="border-l-4 border-l-yellow-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total de Agendamentos</CardTitle>
             <Users className="h-5 w-5 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{dashboardData.atendimentosHoje}</div>
+            <div className="text-2xl font-bold text-gray-900">{dashboardData.total_hoje}</div>
             <p className="text-xs text-gray-500 mt-1">marcados para hoje (00:00 às 23:59)</p>
           </CardContent>
         </Card>
 
+        {/* Receita do Dia */}
         <Card className="border-l-4 border-l-green-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Receita do Dia</CardTitle>
@@ -131,39 +133,39 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              R$ {Number(dashboardData.receita_dia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-500 mt-1">realizados (00:00 até agora)</p>
           </CardContent>
         </Card>
 
+        {/* Serviços Realizados */}
         <Card className="border-l-4 border-l-blue-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Serviços Realizados</CardTitle>
             <CheckCircle className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
+            <div className="text-2xl font-bold text-gray-900">{dashboardData.servicos_realizados}</div>
             <p className="text-xs text-gray-500 mt-1">concluídos (horário já passou)</p>
           </CardContent>
         </Card>
 
+        {/* Aguardando */}
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Aguardando</CardTitle>
             <Clock className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.servicosAguardando}
-            </div>
+            <div className="text-2xl font-bold text-gray-900">{dashboardData.aguardando}</div>
             <p className="text-xs text-gray-500 mt-1">próximas 24h (futuros)</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros da Agenda) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Agendamentos Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lucas - Tabela */}
         <Card className="shadow-sm">
           <CardHeader className="bg-yellow-50/50 border-b">
