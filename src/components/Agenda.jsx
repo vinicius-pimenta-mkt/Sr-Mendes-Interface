@@ -33,10 +33,9 @@ import {
   CheckCircle,
   AlertCircle,
   CalendarDays,
-  Filter,
   User,
-  CreditCard,
-  Phone
+  Phone,
+  Lock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -45,9 +44,11 @@ const Agenda = () => {
   const [agendamentos, setAgendamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  
   const [formData, setFormData] = useState({
     cliente_nome: '',
     cliente_telefone: '',
@@ -59,6 +60,15 @@ const Agenda = () => {
     forma_pagamento: 'Dinheiro',
     observacoes: '',
     barber: 'Lucas'
+  });
+
+  const [blockData, setBlockData] = useState({
+    barber: 'Ambos',
+    data_inicio: format(new Date(), 'yyyy-MM-dd'),
+    data_fim: format(new Date(), 'yyyy-MM-dd'),
+    hora_inicio: '12:00',
+    hora_fim: '14:00',
+    intervalo: '30'
   });
 
   const tabelaPrecos = {
@@ -171,8 +181,62 @@ const Agenda = () => {
     }
   };
 
+  // Gerador de Slots para Bloqueio
+  const gerarSlotsBloqueio = () => {
+    const slots = [];
+    const dIni = new Date(blockData.data_inicio + 'T00:00:00');
+    const dFim = new Date(blockData.data_fim + 'T00:00:00');
+    
+    for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
+      const dataStr = format(d, 'yyyy-MM-dd');
+      const [hIni, mIni] = blockData.hora_inicio.split(':').map(Number);
+      const [hFim, mFim] = blockData.hora_fim.split(':').map(Number);
+      
+      let minAtual = hIni * 60 + mIni;
+      const minFim = hFim * 60 + mFim;
+      
+      while (minAtual <= minFim) {
+        const h = Math.floor(minAtual / 60).toString().padStart(2, '0');
+        const m = (minAtual % 60).toString().padStart(2, '0');
+        slots.push({ data: dataStr, hora: `${h}:${m}` });
+        minAtual += parseInt(blockData.intervalo);
+      }
+    }
+    return slots;
+  };
+
+  const handleBlockSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const slots = gerarSlotsBloqueio();
+      const requests = [];
+      
+      if (blockData.barber === 'Lucas' || blockData.barber === 'Ambos') {
+        requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/bloquear`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ bloqueios: slots })
+        }));
+      }
+      if (blockData.barber === 'Yuri' || blockData.barber === 'Ambos') {
+        requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri/bloquear`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ bloqueios: slots })
+        }));
+      }
+
+      await Promise.all(requests);
+      fetchAgendamentos();
+      setBlockDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao bloquear agenda:', error);
+    }
+  };
+
   const handleDelete = async (agendamento) => {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+    if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
     try {
       const token = localStorage.getItem('token');
       const isYuri = agendamento.barber === 'Yuri';
@@ -228,6 +292,7 @@ const Agenda = () => {
       case 'Confirmado': return 'bg-green-100 text-green-800';
       case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
       case 'Cancelado':  return 'bg-red-100 text-red-800';
+      case 'Bloqueado':  return 'bg-gray-800 text-white';
       default:           return 'bg-gray-100 text-gray-800';
     }
   };
@@ -237,6 +302,7 @@ const Agenda = () => {
       case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
       case 'Pendente':   return <Clock className="h-4 w-4" />;
       case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
+      case 'Bloqueado':  return <Lock className="h-4 w-4" />;
       default:           return <Clock className="h-4 w-4" />;
     }
   };
@@ -278,21 +344,25 @@ const Agenda = () => {
                   </tr>
                 ) : (
                   filtrados.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={a.id} className={`hover:bg-gray-50 transition-colors ${a.status === 'Bloqueado' ? 'bg-gray-50/50 opacity-70' : ''}`}>
                       <td className="px-4 py-3 font-bold text-gray-900">{a.hora.substring(0, 5)}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-700">{a.cliente_nome}</span>
-                          <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                            <Phone className="h-2 w-2" /> {a.cliente_telefone || 'Sem tel.'}
-                          </span>
+                          <span className={`font-medium ${a.status === 'Bloqueado' ? 'text-gray-500' : 'text-gray-700'}`}>{a.cliente_nome}</span>
+                          {a.status !== 'Bloqueado' && (
+                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <Phone className="h-2 w-2" /> {a.cliente_telefone || 'Sem tel.'}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">{a.servico}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
-                          {a.forma_pagamento || 'Não def.'}
-                        </span>
+                        {a.status !== 'Bloqueado' ? (
+                           <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
+                             {a.forma_pagamento || 'Não def.'}
+                           </span>
+                        ) : '-'}
                       </td>
                       <td className="px-4 py-3">
                         <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
@@ -303,9 +373,11 @@ const Agenda = () => {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(a)} className="h-8 w-8 text-blue-600">
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        {a.status !== 'Bloqueado' && (
+                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(a)} className="h-8 w-8 text-blue-600">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleDelete(a)} className="h-8 w-8 text-red-600">
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -351,6 +423,67 @@ const Agenda = () => {
             </PopoverContent>
           </Popover>
 
+          {/* BOTÃO E MODAL DE BLOQUEAR AGENDA */}
+          <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary" className="bg-gray-800 hover:bg-gray-900 text-white">
+                <Lock className="h-4 w-4 mr-2" /> Bloquear Horários
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Bloquear Horários na Agenda</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleBlockSubmit} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label>Agenda(s) a bloquear</Label>
+                  <Select value={blockData.barber} onValueChange={(v) => setBlockData({...blockData, barber: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ambos">Geral (Lucas e Yuri)</SelectItem>
+                      <SelectItem value="Lucas">Apenas Lucas</SelectItem>
+                      <SelectItem value="Yuri">Apenas Yuri</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Data de Início</Label>
+                    <Input type="date" required value={blockData.data_inicio} onChange={(e) => setBlockData({...blockData, data_inicio: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data Final</Label>
+                    <Input type="date" required value={blockData.data_fim} onChange={(e) => setBlockData({...blockData, data_fim: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hora Inicial</Label>
+                    <Input type="time" required value={blockData.hora_inicio} onChange={(e) => setBlockData({...blockData, hora_inicio: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hora Final</Label>
+                    <Input type="time" required value={blockData.hora_fim} onChange={(e) => setBlockData({...blockData, hora_fim: e.target.value})} />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label>Gerar bloqueios a cada:</Label>
+                    <Select value={blockData.intervalo} onValueChange={(v) => setBlockData({...blockData, intervalo: v})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 Minutos</SelectItem>
+                        <SelectItem value="30">30 Minutos</SelectItem>
+                        <SelectItem value="60">1 Hora</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-6 border-t">
+                  <Button type="button" variant="outline" onClick={() => setBlockDialogOpen(false)}>Cancelar</Button>
+                  <Button type="submit" className="bg-gray-800 hover:bg-gray-900 text-white">Aplicar Bloqueio</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* BOTÃO NOVO AGENDAMENTO */}
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if(!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-amber-600 hover:bg-amber-700 text-white">
@@ -442,6 +575,7 @@ const Agenda = () => {
                         <SelectItem value="Pendente">Pendente</SelectItem>
                         <SelectItem value="Confirmado">Confirmado</SelectItem>
                         <SelectItem value="Cancelado">Cancelado</SelectItem>
+                        <SelectItem value="Bloqueado">Bloqueado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
