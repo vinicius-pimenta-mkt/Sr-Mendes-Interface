@@ -136,14 +136,14 @@ const DashboardContent = () => {
 
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Aguardando</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Pendentes</CardTitle>
             <Clock className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
               {dashboardData.servicosAguardando}
             </div>
-            <p className="text-xs text-gray-500 mt-1">próximos clientes até 19:00h</p>
+            <p className="text-xs text-gray-500 mt-1">agendamentos pendentes (próximas 24h)</p>
           </CardContent>
         </Card>
       </div>
