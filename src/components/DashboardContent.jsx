@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Users,
-  Calendar,
-  DollarSign,
-  Scissors,
+import { 
+  Users, 
+  Calendar, 
+  DollarSign, 
+  Scissors, 
   Clock,
   CheckCircle,
   AlertCircle,
@@ -18,25 +18,19 @@ const DashboardContent = () => {
     atendimentosHoje: 0,
     receitaDia: 0,
     servicosRealizados: 0,
-    servicosAguardando: 0,
+    aguardando: 0,
     agendamentos: [],
-    agoraHora: "00:00",
-    hoje: "", // Adicionado para receber a data de hoje do backend
-    amanha: "" // Adicionado para receber a data de amanhã do backend
+    agoraHora: "00:00"
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
-    // Atualizar a cada 5 minutos para manter o dashboard sincronizado com a agenda em tempo real
-    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      // Endpoint de relatorios que agora unifica dados históricos e futuros
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -46,8 +40,6 @@ const DashboardContent = () => {
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
-      } else {
-        console.error('Erro na resposta:', response.status);
       }
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
@@ -60,11 +52,6 @@ const DashboardContent = () => {
     return hora.substring(0, 5);
   };
 
-  const formatarData = (dataStr) => {
-    const [ano, mes, dia] = dataStr.split('-');
-    return `${dia}/${mes}`;
-  };
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'Confirmado': return 'bg-green-100 text-green-800';
@@ -74,20 +61,22 @@ const DashboardContent = () => {
     }
   };
 
-  // Os agendamentos já vêm filtrados do backend (apenas futuros nas próximas 24h)
-  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
-
-  // Função para obter o label correto da data, usando as datas de referência do backend
-  const getDataLabel = (data) => {
-    if (data === dashboardData.hoje) {
-      return 'Hoje';
-    } else if (data === dashboardData.amanha) {
-      return 'Amanhã';
-    } else {
-      return formatarData(data);
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
+      case 'Pendente':   return <Clock className="h-4 w-4" />;
+      case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
+      default:           return <Clock className="h-4 w-4" />;
     }
   };
+
+  // Filtragem inteligente: Aguardando vs Realizados
+  // Filtramos apenas por HORA para determinar se está aguardando ou já passou (realizado)
+  const agendamentosAguardando = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora >= dashboardData.agoraHora);
+  const agendamentosRealizados = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora < dashboardData.agoraHora);
+
+  const agendamentosLucas = agendamentosAguardando.filter(a => a.barber === 'Lucas');
+  const agendamentosYuri = agendamentosAguardando.filter(a => a.barber === 'Yuri');
 
   if (loading) {
     return (
@@ -107,7 +96,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Agenda em Tempo Real: Histórico de Hoje + Próximos Agendamentos</p>
+          <p className="text-gray-600">Visão geral de hoje - {new Date().toLocaleDateString('pt-BR')}</p>
         </div>
       </div>
 
@@ -120,7 +109,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.atendimentosHoje}</div>
-            <p className="text-xs text-gray-500 mt-1">marcados para hoje (00:00 às 23:59)</p>
+            <p className="text-xs text-gray-500 mt-1">marcados para hoje</p>
           </CardContent>
         </Card>
 
@@ -133,7 +122,7 @@ const DashboardContent = () => {
             <div className="text-2xl font-bold text-gray-900">
               R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-gray-500 mt-1">realizados (00:00 até agora)</p>
+            <p className="text-xs text-gray-500 mt-1">faturamento confirmado</p>
           </CardContent>
         </Card>
 
@@ -144,7 +133,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
-            <p className="text-xs text-gray-500 mt-1">concluídos (horário já passou)</p>
+            <p className="text-xs text-gray-500 mt-1">horário já passou e confirmado</p>
           </CardContent>
         </Card>
 
@@ -155,14 +144,14 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.servicosAguardando}
+              {dashboardData.aguardando}
             </div>
-            <p className="text-xs text-gray-500 mt-1">próximas 24h (futuros)</p>
+            <p className="text-xs text-gray-500 mt-1">próximos clientes até 19:00h</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros da Agenda) */}
+      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Lucas - Tabela */}
         <Card className="shadow-sm">
@@ -187,10 +176,7 @@ const DashboardContent = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900 text-lg">
-                        {formatarHorario(a.hora)} 
-                        <span className="text-[10px] text-gray-400 ml-1">({getDataLabel(a.data)})</span>
-                      </p>
+                      <p className="font-bold text-gray-900 text-lg">{formatarHorario(a.hora)}</p>
                       <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
                         {a.status}
                       </Badge>
@@ -198,7 +184,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Lucas nas próximas 24h.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Lucas hoje.</div>
               )}
             </div>
           </CardContent>
@@ -227,10 +213,7 @@ const DashboardContent = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900 text-lg">
-                        {formatarHorario(a.hora)}
-                        <span className="text-[10px] text-gray-400 ml-1">({getDataLabel(a.data)})</span>
-                      </p>
+                      <p className="font-bold text-gray-900 text-lg">{formatarHorario(a.hora)}</p>
                       <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
                         {a.status}
                       </Badge>
@@ -238,7 +221,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Yuri nas próximas 24h.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Yuri hoje.</div>
               )}
             </div>
           </CardContent>
