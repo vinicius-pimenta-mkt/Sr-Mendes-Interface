@@ -72,6 +72,7 @@ const DashboardContent = () => {
 
   // Filtragem inteligente: Aguardando vs Realizados
   // Filtramos apenas por HORA para determinar se está aguardando ou já passou (realizado)
+  // Usamos a hora vinda do backend para garantir sincronia com os cards
   const agendamentosAguardando = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora >= dashboardData.agoraHora);
   const agendamentosRealizados = dashboardData.agendamentos.filter(a => a.status !== 'Cancelado' && a.hora < dashboardData.agoraHora);
 
@@ -96,7 +97,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Visão geral de hoje - {new Date().toLocaleDateString('pt-BR')}</p>
+          <p className="text-gray-600">Visão geral de hoje - {new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}</p>
         </div>
       </div>
 
