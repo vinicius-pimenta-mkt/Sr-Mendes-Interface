@@ -141,7 +141,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.servicosAguardando}
+              {dashboardData.servicosAguardando || 0}
             </div>
             <p className="text-xs text-gray-500 mt-1">agendamentos pendentes (próximas 24h)</p>
           </CardContent>
