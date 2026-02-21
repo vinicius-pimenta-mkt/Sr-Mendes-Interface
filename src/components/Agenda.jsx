@@ -72,27 +72,13 @@ const Agenda = () => {
   });
 
   const tabelaPrecos = {
-    'Sobrancelha': 15,
-    'Selagem': 65,
-    'Relaxamento': 45,
-    'Pigmentação': 30,
-    'Acabamento (Pezinho)': 25,
-    'Luzes': 100,
-    'Limpeza de pele': 40,
-    'Hidratação': 40,
-    'Finalização penteado': 25,
-    'Corte + Sobrancelha': 60,
-    'Corte Masculino': 45,
-    'Raspar na maquina': 35,
-    'Corte infantil no carrinho': 50,
-    'Corte infantil': 50,
-    'Corte + Barba simples': 80,
-    'Combo Corte + Barboterapia': 90,
-    'Combo Corte + Barba + Sobrancelha': 90,
-    'Coloração': 35,
-    'Barboterapia': 50,
-    'Barba Simples': 40,
-    'Tratamento V.O': 90
+    'Sobrancelha': 15, 'Selagem': 65, 'Relaxamento': 45, 'Pigmentação': 30,
+    'Acabamento (Pezinho)': 25, 'Luzes': 100, 'Limpeza de pele': 40,
+    'Hidratação': 40, 'Finalização penteado': 25, 'Corte + Sobrancelha': 60,
+    'Corte Masculino': 45, 'Raspar na maquina': 35, 'Corte infantil no carrinho': 50,
+    'Corte infantil': 50, 'Corte + Barba simples': 80, 'Combo Corte + Barboterapia': 90,
+    'Combo Corte + Barba + Sobrancelha': 90, 'Coloração': 35, 'Barboterapia': 50,
+    'Barba Simples': 40, 'Tratamento V.O': 90
   };
 
   const servicos = Object.keys(tabelaPrecos);
@@ -150,15 +136,11 @@ const Agenda = () => {
         ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
-      const url = editingAgendamento
-        ? `${baseUrl}/${editingAgendamento.id}`
-        : baseUrl;
-
+      const url = editingAgendamento ? `${baseUrl}/${editingAgendamento.id}` : baseUrl;
       const method = editingAgendamento ? 'PUT' : 'POST';
 
       const precoEmCentavos = formData.preco
-        ? Math.round(parseFloat(formData.preco.replace(',', '.')) * 100)
-        : null;
+        ? Math.round(parseFloat(formData.preco.replace(',', '.')) * 100) : null;
 
       const payload = { ...formData, preco: precoEmCentavos };
 
@@ -181,11 +163,14 @@ const Agenda = () => {
     }
   };
 
-  // Gerador de Slots para Bloqueio
-  const gerarSlotsBloqueio = () => {
+  // Gerador de Slots para Bloqueio com correção de Fuso Horário e Block_ID
+  const gerarSlotsBloqueio = (blockId) => {
     const slots = [];
-    const dIni = new Date(blockData.data_inicio + 'T00:00:00');
-    const dFim = new Date(blockData.data_fim + 'T00:00:00');
+    const [yearIni, monthIni, dayIni] = blockData.data_inicio.split('-').map(Number);
+    const [yearFim, monthFim, dayFim] = blockData.data_fim.split('-').map(Number);
+    
+    const dIni = new Date(yearIni, monthIni - 1, dayIni);
+    const dFim = new Date(yearFim, monthFim - 1, dayFim);
     
     for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
       const dataStr = format(d, 'yyyy-MM-dd');
@@ -198,7 +183,7 @@ const Agenda = () => {
       while (minAtual <= minFim) {
         const h = Math.floor(minAtual / 60).toString().padStart(2, '0');
         const m = (minAtual % 60).toString().padStart(2, '0');
-        slots.push({ data: dataStr, hora: `${h}:${m}` });
+        slots.push({ data: dataStr, hora: `${h}:${m}`, blockId });
         minAtual += parseInt(blockData.intervalo);
       }
     }
@@ -209,7 +194,8 @@ const Agenda = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const slots = gerarSlotsBloqueio();
+      const blockId = 'block_' + Date.now(); // Identificador único deste grupo de bloqueio
+      const slots = gerarSlotsBloqueio(blockId);
       const requests = [];
       
       if (blockData.barber === 'Lucas' || blockData.barber === 'Ambos') {
@@ -236,14 +222,34 @@ const Agenda = () => {
   };
 
   const handleDelete = async (agendamento) => {
-    if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
-    try {
-      const token = localStorage.getItem('token');
-      const isYuri = agendamento.barber === 'Yuri';
-      const baseUrl = isYuri 
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+    const token = localStorage.getItem('token');
+    const isYuri = agendamento.barber === 'Yuri';
+    const baseUrl = isYuri 
+      ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
+      : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
+    // Se for um bloco de agenda, pergunta se apaga tudo
+    if (agendamento.status === 'Bloqueado' && agendamento.observacoes?.startsWith('block_')) {
+      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir a rotina completa (todos os dias/horários desse bloqueio).\n\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
+      
+      if (deleteGroup) {
+        try {
+          const response = await fetch(`${baseUrl}/bloqueio/${agendamento.observacoes}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (response.ok) fetchAgendamentos();
+        } catch (error) { console.error('Erro ao remover bloco completo', error); }
+        return;
+      } else {
+        if (!confirm('Confirmar liberação APENAS deste horário específico?')) return;
+      }
+    } else {
+      // Exclusão normal
+      if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
+    }
+
+    try {
       const response = await fetch(`${baseUrl}/${agendamento.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
@@ -256,16 +262,10 @@ const Agenda = () => {
 
   const resetForm = () => {
     setFormData({
-      cliente_nome: '',
-      cliente_telefone: '',
-      servico: '',
+      cliente_nome: '', cliente_telefone: '', servico: '',
       data: format(selectedDate || new Date(), 'yyyy-MM-dd'),
-      hora: '',
-      status: 'Pendente',
-      preco: '',
-      forma_pagamento: 'Dinheiro',
-      observacoes: '',
-      barber: 'Lucas'
+      hora: '', status: 'Pendente', preco: '',
+      forma_pagamento: 'Dinheiro', observacoes: '', barber: 'Lucas'
     });
     setEditingAgendamento(null);
   };
@@ -344,7 +344,7 @@ const Agenda = () => {
                   </tr>
                 ) : (
                   filtrados.map((a) => (
-                    <tr key={a.id} className={`hover:bg-gray-50 transition-colors ${a.status === 'Bloqueado' ? 'bg-gray-50/50 opacity-70' : ''}`}>
+                    <tr key={a.id} className={`hover:bg-gray-50 transition-colors ${a.status === 'Bloqueado' ? 'bg-gray-100 opacity-80' : ''}`}>
                       <td className="px-4 py-3 font-bold text-gray-900">{a.hora.substring(0, 5)}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
@@ -534,29 +534,15 @@ const Agenda = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Data</Label>
-                    <Input 
-                      type="date" 
-                      required 
-                      value={formData.data} 
-                      onChange={(e) => setFormData({...formData, data: e.target.value})}
-                    />
+                    <Input type="date" required value={formData.data} onChange={(e) => setFormData({...formData, data: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label>Hora</Label>
-                    <Input 
-                      type="time" 
-                      required 
-                      value={formData.hora} 
-                      onChange={(e) => setFormData({...formData, hora: e.target.value})}
-                    />
+                    <Input type="time" required value={formData.hora} onChange={(e) => setFormData({...formData, hora: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label>Preço (R$)</Label>
-                    <Input 
-                      value={formData.preco} 
-                      onChange={(e) => setFormData({...formData, preco: e.target.value})}
-                      placeholder="0,00"
-                    />
+                    <Input value={formData.preco} onChange={(e) => setFormData({...formData, preco: e.target.value})} placeholder="0,00" />
                   </div>
                   <div className="space-y-2">
                     <Label>Forma de Pagamento</Label>
