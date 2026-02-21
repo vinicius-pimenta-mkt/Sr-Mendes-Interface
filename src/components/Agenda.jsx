@@ -191,6 +191,7 @@ const Agenda = () => {
     return slots;
   };
 
+  // Função de Bloqueio disparando requisições individuais para usar a API atual do servidor
   const handleBlockSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -205,31 +206,44 @@ const Agenda = () => {
 
       const requests = [];
       
-      if (blockData.barber === 'Lucas' || blockData.barber === 'Ambos') {
-        requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos/bloquear`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ bloqueios: slots })
-        }));
-      }
-      if (blockData.barber === 'Yuri' || blockData.barber === 'Ambos') {
-        requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri/bloquear`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ bloqueios: slots })
-        }));
+      for (const slot of slots) {
+        const payload = {
+          cliente_nome: 'Bloqueio de Agenda',
+          cliente_telefone: '',
+          servico: 'Horário Bloqueado',
+          data: slot.data,
+          hora: slot.hora,
+          status: 'Bloqueado',
+          preco: 0,
+          forma_pagamento: '-',
+          observacoes: slot.blockId
+        };
+
+        if (blockData.barber === 'Lucas' || blockData.barber === 'Ambos') {
+          requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+          }));
+        }
+        if (blockData.barber === 'Yuri' || blockData.barber === 'Ambos') {
+          requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+          }));
+        }
       }
 
       const responses = await Promise.all(requests);
       
-      // Validador de falha silenciosa (Avisa na tela se o backend rejeitar)
       const hasError = responses.find(r => !r.ok);
       if (hasError) {
-        alert("Erro no servidor! Provavelmente o backend ainda não foi atualizado na Easypanel.\nPor favor, faça um novo Deploy no servidor e tente novamente.");
-        return;
+        alert("Atenção: Alguns horários podem não ter sido bloqueados corretamente.");
+      } else {
+        alert(`${slots.length} horários foram bloqueados com sucesso!`);
       }
-
-      alert(`${slots.length} horários foram bloqueados com sucesso!`);
+      
       fetchAgendamentos();
       setBlockDialogOpen(false);
     } catch (error) {
@@ -238,31 +252,52 @@ const Agenda = () => {
     }
   };
 
+  // Função de Deletar com Inteligência de Lote simulada no Frontend
   const handleDelete = async (agendamento) => {
     const token = localStorage.getItem('token');
+    
+    // Se for um bloco de agenda, pergunta se apaga tudo
+    if (agendamento.status === 'Bloqueado' && agendamento.observacoes?.startsWith('block_')) {
+      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir a rotina completa (todos os horários desse bloqueio).\n\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
+      
+      if (deleteGroup) {
+        try {
+          const blockId = agendamento.observacoes;
+          // Encontra todos os agendamentos na tela que pertencem a este bloqueio
+          const itemsToDelete = agendamentos.filter(a => a.observacoes === blockId);
+          
+          const deleteRequests = itemsToDelete.map(item => {
+            const baseUrl = item.barber === 'Yuri' 
+              ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri` 
+              : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+              
+            return fetch(`${baseUrl}/${item.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` },
+            });
+          });
+
+          await Promise.all(deleteRequests);
+          fetchAgendamentos();
+          alert('Bloqueio em lote removido com sucesso!');
+        } catch (error) { 
+          console.error('Erro ao remover bloco completo', error); 
+          alert('Houve um erro ao tentar remover o bloqueio.');
+        }
+        return;
+      } else {
+        if (!confirm('Confirmar liberação APENAS deste horário específico?')) return;
+      }
+    } else {
+      // Exclusão normal
+      if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
+    }
+
+    // Código padrão para apagar apenas 1 item
     const isYuri = agendamento.barber === 'Yuri';
     const baseUrl = isYuri 
       ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
       : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
-
-    if (agendamento.status === 'Bloqueado' && agendamento.observacoes?.startsWith('block_')) {
-      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir o bloco COMPLETO.\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
-      
-      if (deleteGroup) {
-        try {
-          const response = await fetch(`${baseUrl}/bloqueio/${agendamento.observacoes}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          if (response.ok) fetchAgendamentos();
-        } catch (error) { console.error('Erro ao remover bloco', error); }
-        return;
-      } else {
-        if (!confirm('Tem certeza que deseja liberar APENAS este horário?')) return;
-      }
-    } else {
-      if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
-    }
 
     try {
       const response = await fetch(`${baseUrl}/${agendamento.id}`, {
