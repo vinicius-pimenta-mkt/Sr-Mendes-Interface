@@ -229,7 +229,7 @@ const Relatorios = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={servicosMaisVendidos} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                      <XAxis dataKey="service" tick={{ fontSize: 10, angle: -45, textAnchor: 'end', height: 80 }} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="service" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
                       <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
