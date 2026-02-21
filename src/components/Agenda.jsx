@@ -66,15 +66,10 @@ const Agenda = () => {
     'Selagem': 65,
     'Relaxamento': 45,
     'Pigmentação': 30,
-    'Pezinho': 15,
-    'Luzes': 60,
-    'Hidratação': 20,
-    'Corte e Barba': 55,
-    'Corte': 35,
-    'Barba': 25,
-    'Combo': 50,
     'Acabamento (Pezinho)': 25,
+    'Luzes': 100,
     'Limpeza de pele': 40,
+    'Hidratação': 40,
     'Finalização penteado': 25,
     'Corte + Sobrancelha': 60,
     'Corte Masculino': 45,
@@ -141,7 +136,7 @@ const Agenda = () => {
     try {
       const token = localStorage.getItem('token');
       const isYuri = formData.barber === 'Yuri';
-      const baseUrl = isYuri
+      const baseUrl = isYuri 
         ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
@@ -173,6 +168,25 @@ const Agenda = () => {
       }
     } catch (error) {
       console.error('Erro ao salvar agendamento:', error);
+    }
+  };
+
+  const handleDelete = async (agendamento) => {
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const isYuri = agendamento.barber === 'Yuri';
+      const baseUrl = isYuri 
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
+
+      const response = await fetch(`${baseUrl}/${agendamento.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) fetchAgendamentos();
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
     }
   };
 
@@ -212,18 +226,18 @@ const Agenda = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'Confirmado': return 'bg-green-100 text-green-800';
-      case 'Pendente': return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelado': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
+      case 'Cancelado':  return 'bg-red-100 text-red-800';
+      default:           return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Confirmado': return <CheckCircle className="h-4 w-4" />;
-      case 'Pendente': return <Clock className="h-4 w-4" />;
-      case 'Cancelado': return <AlertCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+      case 'Pendente':   return <Clock className="h-4 w-4" />;
+      case 'Cancelado':  return <AlertCircle className="h-4 w-4" />;
+      default:           return <Clock className="h-4 w-4" />;
     }
   };
 
@@ -292,6 +306,9 @@ const Agenda = () => {
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(a)} className="h-8 w-8 text-blue-600">
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(a)} className="h-8 w-8 text-red-600">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -311,7 +328,7 @@ const Agenda = () => {
           <h1 className="text-3xl font-bold text-gray-900">Agenda de Atendimentos</h1>
           <p className="text-gray-600">Gerencie os horários da barbearia</p>
         </div>
-
+        
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
@@ -334,7 +351,7 @@ const Agenda = () => {
             </PopoverContent>
           </Popover>
 
-          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if(!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-amber-600 hover:bg-amber-700 text-white">
                 <Plus className="h-4 w-4 mr-2" /> Novo Agendamento
@@ -348,7 +365,7 @@ const Agenda = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2 col-span-2">
                     <Label>Barbeiro</Label>
-                    <Select value={formData.barber} onValueChange={(v) => setFormData({ ...formData, barber: v })}>
+                    <Select value={formData.barber} onValueChange={(v) => setFormData({...formData, barber: v})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Lucas">Lucas</SelectItem>
@@ -358,18 +375,18 @@ const Agenda = () => {
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Nome do Cliente</Label>
-                    <Input
-                      required
-                      value={formData.cliente_nome}
-                      onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
+                    <Input 
+                      required 
+                      value={formData.cliente_nome} 
+                      onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
                       placeholder="Nome completo"
                     />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Telefone do Cliente</Label>
-                    <Input
-                      value={formData.cliente_telefone}
-                      onChange={(e) => setFormData({ ...formData, cliente_telefone: e.target.value })}
+                    <Input 
+                      value={formData.cliente_telefone} 
+                      onChange={(e) => setFormData({...formData, cliente_telefone: e.target.value})}
                       placeholder="(00) 00000-0000"
                     />
                   </div>
@@ -384,33 +401,33 @@ const Agenda = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Data</Label>
-                    <Input
-                      type="date"
-                      required
-                      value={formData.data}
-                      onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                    <Input 
+                      type="date" 
+                      required 
+                      value={formData.data} 
+                      onChange={(e) => setFormData({...formData, data: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Hora</Label>
-                    <Input
-                      type="time"
-                      required
-                      value={formData.hora}
-                      onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+                    <Input 
+                      type="time" 
+                      required 
+                      value={formData.hora} 
+                      onChange={(e) => setFormData({...formData, hora: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Preço (R$)</Label>
-                    <Input
-                      value={formData.preco}
-                      onChange={(e) => setFormData({ ...formData, preco: e.target.value })}
+                    <Input 
+                      value={formData.preco} 
+                      onChange={(e) => setFormData({...formData, preco: e.target.value})}
                       placeholder="0,00"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Pagamento</Label>
-                    <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({ ...formData, forma_pagamento: v })}>
+                    <Label>Forma de Pagamento</Label>
+                    <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {formasPagamento.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
@@ -419,7 +436,7 @@ const Agenda = () => {
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Status</Label>
-                    <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                    <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Pendente">Pendente</SelectItem>
@@ -428,18 +445,12 @@ const Agenda = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label>Observações</Label>
-                    <Input
-                      value={formData.observacoes}
-                      onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                      placeholder="Opcional"
-                    />
-                  </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-3 pt-6 border-t">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-                  <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white">Salvar</Button>
+                  <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white">
+                    {editingAgendamento ? 'Salvar Alterações' : 'Criar Agendamento'}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
