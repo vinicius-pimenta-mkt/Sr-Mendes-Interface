@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  Scissors, 
+import {
+  Users,
+  Calendar,
+  DollarSign,
+  Scissors,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -21,8 +21,8 @@ const DashboardContent = () => {
     servicosAguardando: 0,
     agendamentos: [],
     agoraHora: "00:00",
-    hoje: "",
-    amanha: ""
+    hoje: "", // Adicionado para receber a data de hoje do backend
+    amanha: "" // Adicionado para receber a data de amanhã do backend
   });
   const [loading, setLoading] = useState(true);
 
@@ -78,7 +78,7 @@ const DashboardContent = () => {
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
-  // Função para obter o label correto da data
+  // Função para obter o label correto da data, usando as datas de referência do backend
   const getDataLabel = (data) => {
     if (data === dashboardData.hoje) {
       return 'Hoje';
