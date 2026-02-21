@@ -20,7 +20,9 @@ const DashboardContent = () => {
     servicosRealizados: 0,
     servicosAguardando: 0,
     agendamentos: [],
-    agoraHora: "00:00"
+    agoraHora: "00:00",
+    hoje: "",
+    amanha: ""
   });
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ const DashboardContent = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      // Endpoint original de relatorios que agora unifica dados históricos e futuros
+      // Endpoint de relatorios que agora unifica dados históricos e futuros
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -72,11 +74,20 @@ const DashboardContent = () => {
     }
   };
 
-  const hojeStr = new Date().toISOString().split('T')[0];
-
   // Os agendamentos já vêm filtrados do backend (apenas futuros nas próximas 24h)
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
+
+  // Função para obter o label correto da data
+  const getDataLabel = (data) => {
+    if (data === dashboardData.hoje) {
+      return 'Hoje';
+    } else if (data === dashboardData.amanha) {
+      return 'Amanhã';
+    } else {
+      return formatarData(data);
+    }
+  };
 
   if (loading) {
     return (
@@ -109,7 +120,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.atendimentosHoje}</div>
-            <p className="text-xs text-gray-500 mt-1">marcados para hoje</p>
+            <p className="text-xs text-gray-500 mt-1">marcados para hoje (00:00 às 23:59)</p>
           </CardContent>
         </Card>
 
@@ -122,7 +133,7 @@ const DashboardContent = () => {
             <div className="text-2xl font-bold text-gray-900">
               R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-gray-500 mt-1">de 00:00 até agora (confirmados)</p>
+            <p className="text-xs text-gray-500 mt-1">realizados (00:00 até agora)</p>
           </CardContent>
         </Card>
 
@@ -178,7 +189,7 @@ const DashboardContent = () => {
                     <div className="text-right">
                       <p className="font-bold text-gray-900 text-lg">
                         {formatarHorario(a.hora)} 
-                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                        <span className="text-[10px] text-gray-400 ml-1">({getDataLabel(a.data)})</span>
                       </p>
                       <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
                         {a.status}
@@ -218,7 +229,7 @@ const DashboardContent = () => {
                     <div className="text-right">
                       <p className="font-bold text-gray-900 text-lg">
                         {formatarHorario(a.hora)}
-                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                        <span className="text-[10px] text-gray-400 ml-1">({getDataLabel(a.data)})</span>
                       </p>
                       <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
                         {a.status}
