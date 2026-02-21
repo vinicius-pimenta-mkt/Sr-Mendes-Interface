@@ -18,7 +18,7 @@ const DashboardContent = () => {
     atendimentosHoje: 0,
     receitaDia: 0,
     servicosRealizados: 0,
-    servicosAguardando: 0,
+    pendentesFuturos: 0,
     agendamentos: [],
     agoraHora: "00:00"
   });
@@ -26,9 +26,6 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    // Atualizar a cada minuto para manter o tempo real
-    const interval = setInterval(fetchDashboardData, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -71,7 +68,7 @@ const DashboardContent = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-  // AGENDAMENTOS JÁ VÊM FILTRADOS DAS PRÓXIMAS 24H DA AGENDA BRUTA DO BACKEND
+  // Agendamentos futuros filtrados pelo backend
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
 
@@ -93,7 +90,7 @@ const DashboardContent = () => {
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Próximos agendamentos (Próximas 24h)</p>
+          <p className="text-gray-600">Gestão em tempo real - {new Date().toLocaleDateString('pt-BR')}</p>
         </div>
       </div>
 
@@ -130,7 +127,7 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
-            <p className="text-xs text-gray-500 mt-1">horário já passou ou concluído hoje</p>
+            <p className="text-xs text-gray-500 mt-1">horário já passou (hoje)</p>
           </CardContent>
         </Card>
 
@@ -141,9 +138,9 @@ const DashboardContent = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.servicosAguardando || 0}
+              {dashboardData.pendentesFuturos}
             </div>
-            <p className="text-xs text-gray-500 mt-1">agendamentos pendentes (próximas 24h)</p>
+            <p className="text-xs text-gray-500 mt-1">próximos com status pendente</p>
           </CardContent>
         </Card>
       </div>
@@ -184,7 +181,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Lucas nas próximas 24h.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
@@ -224,7 +221,7 @@ const DashboardContent = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro para o Yuri nas próximas 24h.</div>
+                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
