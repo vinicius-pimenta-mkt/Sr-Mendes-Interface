@@ -233,14 +233,15 @@ const Relatorios = () => {
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
                       <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
-                      {barber === 'Geral' ? (
-                        <>
-                          <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[4, 4, 0, 0]} barSize={30} />
-                          <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[4, 4, 0, 0]} barSize={30} />
-                        </>
-                      ) : (
-                        <Bar name={barber} dataKey={barber === 'Lucas' ? 'lucas_qty' : 'yuri_qty'} fill={barber === 'Lucas' ? '#FFD700' : '#4CAF50'} radius={[4, 4, 0, 0]} barSize={50} />
+                      
+                      {/* CÓDIGO CORRIGIDO AQUI SEM FRAGMENTOS */}
+                      {(barber === 'Geral' || barber === 'Lucas') && (
+                        <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[4, 4, 0, 0]} barSize={barber === 'Geral' ? 30 : 50} />
                       )}
+                      {(barber === 'Geral' || barber === 'Yuri') && (
+                        <Bar name="Yuri" dataKey="yuri_qty" fill="#4CAF50" radius={[4, 4, 0, 0]} barSize={barber === 'Geral' ? 30 : 50} />
+                      )}
+
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
