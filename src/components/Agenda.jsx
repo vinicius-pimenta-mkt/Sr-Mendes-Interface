@@ -129,6 +129,16 @@ const Agenda = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // TRAVA: Impede de salvar agendamentos aos domingos e segundas
+    const [ano, mes, dia] = formData.data.split('-');
+    const dataObj = new Date(ano, mes - 1, dia);
+    const diaSemana = dataObj.getDay();
+    if (diaSemana === 0 || diaSemana === 1) {
+      alert('A barbearia é fechada aos Domingos e Segundas-feiras. Selecione outra data.');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const isYuri = formData.barber === 'Yuri';
@@ -157,19 +167,20 @@ const Agenda = () => {
         fetchAgendamentos();
         setDialogOpen(false);
         resetForm();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Erro ao salvar agendamento.');
       }
     } catch (error) {
       console.error('Erro ao salvar agendamento:', error);
     }
   };
 
-  // Gerador de Slots para Bloqueio Blindado contra Fuso Horário
   const gerarSlotsBloqueio = (blockId) => {
     const slots = [];
     const [yearIni, monthIni, dayIni] = blockData.data_inicio.split('-').map(Number);
     const [yearFim, monthFim, dayFim] = blockData.data_fim.split('-').map(Number);
     
-    // Forçando a data ao meio-dia para o Javascript não jogar o dia para trás acidentalmente
     const dIni = new Date(yearIni, monthIni - 1, dayIni, 12, 0, 0);
     const dFim = new Date(yearFim, monthFim - 1, dayFim, 12, 0, 0);
     
@@ -191,7 +202,6 @@ const Agenda = () => {
     return slots;
   };
 
-  // Função de Bloqueio disparando requisições individuais para usar a API atual do servidor
   const handleBlockSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -200,7 +210,7 @@ const Agenda = () => {
       const slots = gerarSlotsBloqueio(blockId);
       
       if (slots.length === 0) {
-        alert("Nenhum horário selecionado. Verifique os horários e datas de início e fim.");
+        alert("Nenhum horário selecionado. Verifique os horários e datas.");
         return;
       }
 
@@ -235,14 +245,8 @@ const Agenda = () => {
         }
       }
 
-      const responses = await Promise.all(requests);
-      
-      const hasError = responses.find(r => !r.ok);
-      if (hasError) {
-        alert("Atenção: Alguns horários podem não ter sido bloqueados corretamente.");
-      } else {
-        alert(`${slots.length} horários foram bloqueados com sucesso!`);
-      }
+      await Promise.all(requests);
+      alert(`${slots.length} horários foram bloqueados com sucesso!`);
       
       fetchAgendamentos();
       setBlockDialogOpen(false);
@@ -252,18 +256,15 @@ const Agenda = () => {
     }
   };
 
-  // Função de Deletar com Inteligência de Lote simulada no Frontend
   const handleDelete = async (agendamento) => {
     const token = localStorage.getItem('token');
     
-    // Se for um bloco de agenda, pergunta se apaga tudo
     if (agendamento.status === 'Bloqueado' && agendamento.observacoes?.startsWith('block_')) {
-      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir a rotina completa (todos os horários desse bloqueio).\n\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
+      const deleteGroup = confirm('ATENÇÃO: Este horário faz parte de um BLOQUEIO EM LOTE.\n\nClique em [OK] para excluir a rotina completa.\n\nClique em [Cancelar] se quiser excluir APENAS este horário específico.');
       
       if (deleteGroup) {
         try {
           const blockId = agendamento.observacoes;
-          // Encontra todos os agendamentos na tela que pertencem a este bloqueio
           const itemsToDelete = agendamentos.filter(a => a.observacoes === blockId);
           
           const deleteRequests = itemsToDelete.map(item => {
@@ -279,21 +280,18 @@ const Agenda = () => {
 
           await Promise.all(deleteRequests);
           fetchAgendamentos();
-          alert('Bloqueio em lote removido com sucesso!');
+          alert('Bloqueio removido!');
         } catch (error) { 
-          console.error('Erro ao remover bloco completo', error); 
-          alert('Houve um erro ao tentar remover o bloqueio.');
+          alert('Erro ao tentar remover o bloqueio.');
         }
         return;
       } else {
         if (!confirm('Confirmar liberação APENAS deste horário específico?')) return;
       }
     } else {
-      // Exclusão normal
       if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
     }
 
-    // Código padrão para apagar apenas 1 item
     const isYuri = agendamento.barber === 'Yuri';
     const baseUrl = isYuri 
       ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
@@ -464,16 +462,19 @@ const Agenda = () => {
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => {
-                  setSelectedDate(date);
-                  setCalendarOpen(false);
+                  if (date) {
+                    setSelectedDate(date);
+                    setCalendarOpen(false);
+                  }
                 }}
+                // TRAVA NO CALENDÁRIO VISUAL: Desativa clique nos domingos (0) e segundas (1)
+                disabled={(date) => date.getDay() === 0 || date.getDay() === 1}
                 locale={ptBR}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
 
-          {/* BOTÃO E MODAL DE BLOQUEAR AGENDA */}
           <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="secondary" className="bg-gray-800 hover:bg-gray-900 text-white">
@@ -533,7 +534,6 @@ const Agenda = () => {
             </DialogContent>
           </Dialog>
 
-          {/* BOTÃO NOVO AGENDAMENTO */}
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if(!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-amber-600 hover:bg-amber-700 text-white">
@@ -558,20 +558,11 @@ const Agenda = () => {
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Nome do Cliente</Label>
-                    <Input 
-                      required 
-                      value={formData.cliente_nome} 
-                      onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
-                      placeholder="Nome completo"
-                    />
+                    <Input required value={formData.cliente_nome} onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})} placeholder="Nome completo" />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Telefone do Cliente</Label>
-                    <Input 
-                      value={formData.cliente_telefone} 
-                      onChange={(e) => setFormData({...formData, cliente_telefone: e.target.value})}
-                      placeholder="(00) 00000-0000"
-                    />
+                    <Input value={formData.cliente_telefone} onChange={(e) => setFormData({...formData, cliente_telefone: e.target.value})} placeholder="(00) 00000-0000" />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Serviço</Label>
