@@ -73,6 +73,15 @@ const Planos = () => {
     'PLANO BARBA ILIMITADO'
   ];
 
+  // Dicionário de cores clarinhas e transparentes para cada plano
+  const coresPorPlano = {
+    'PLANO MENSAL DE CORTE E BARBA': 'bg-green-50/60',
+    'PLANO CORTE QUINZENAL': 'bg-blue-50/60',
+    'PLANO CORTE MENSAL': 'bg-purple-50/60',
+    'PLANO CORTE E BARBA QUINZENAL': 'bg-yellow-50/60',
+    'PLANO BARBA ILIMITADO': 'bg-slate-100/60' // Cinza claro
+  };
+
   const formasPagamento = ['Pix', 'Dinheiro', 'Cartão de Débito', 'Cartão de Crédito'];
 
   useEffect(() => {
@@ -273,12 +282,15 @@ const Planos = () => {
 
       <div className="space-y-8">
         {planosDisponiveis.map(plano => (
-          <Card key={plano} className="shadow-sm border-none bg-white overflow-hidden">
-            <CardHeader className="bg-gray-50/50 border-b py-4">
+          /* Aqui injetamos a cor específica de cada box baseada no dicionário criado */
+          <Card key={plano} className={`shadow-sm border-none overflow-hidden ${coresPorPlano[plano] || 'bg-white'}`}>
+            {/* O cabeçalho foi fixado com fundo cinza sólido para não misturar com as cores transparentes */}
+            <CardHeader className="bg-gray-50 border-b py-4">
               <CardTitle className="text-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-amber-600" />
-                  <span className="font-bold">{plano}</span>
+                  {/* Adicionado o texto "(SOBRANCELHA INCLUSO)" visualmente */}
+                  <span className="font-bold">{plano} (SOBRANCELHA INCLUSO)</span>
                 </div>
                 <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
                   {assinantesPorPlano[plano].length} {assinantesPorPlano[plano].length === 1 ? 'assinante' : 'assinantes'}
@@ -298,20 +310,20 @@ const Planos = () => {
                       <th className="px-6 py-4 text-right">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100/50">
                     {assinantesPorPlano[plano].length === 0 ? (
                       <tr>
                         <td colSpan="6" className="px-6 py-10 text-center text-gray-400 italic">Nenhum assinante ativo neste plano.</td>
                       </tr>
                     ) : (
                       assinantesPorPlano[plano].map((a) => (
-                        <tr key={a.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <tr key={a.id} className="hover:bg-white/40 transition-colors group">
                           <td className="px-6 py-4">
                             <span className="font-bold text-gray-900 block">{a.nome}</span>
-                            <span className="text-[10px] text-gray-400">Cadastrado em: {new Date(a.data_cadastro).toLocaleDateString('pt-BR')}</span>
+                            <span className="text-[10px] text-gray-500">Cadastrado em: {new Date(a.data_cadastro).toLocaleDateString('pt-BR')}</span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="flex items-center gap-1 text-gray-600">
+                            <span className="flex items-center gap-1 text-gray-700">
                               <IdCard className="h-3 w-3 text-gray-400" /> {a.cpf || '--'}
                             </span>
                           </td>
@@ -322,7 +334,7 @@ const Planos = () => {
                                 <span className="flex items-center gap-1 text-xs text-gray-700"><Clock className="h-3 w-3" /> {a.ultima_visita}</span>
                               </div>
                             ) : (
-                              <span className="text-gray-400 text-xs italic">Sem registros</span>
+                              <span className="text-gray-500 text-xs italic">Sem registros</span>
                             )}
                           </td>
                           <td className="px-6 py-4">
