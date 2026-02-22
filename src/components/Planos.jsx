@@ -29,26 +29,11 @@ import {
   Trash2,
   Edit,
   UserCheck,
-  IdCard
+  IdCard,
+  Phone
 } from 'lucide-react';
 
 const Planos = () => {
-  // Dados extraídos do PDF para carga inicial (Fallback caso o banco esteja vazio)
-  const dadosIniciais = [
-    { id: 'f1', nome: "Samuel junior pereira Braga", cpf: "161.208.026-06", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "09/02", status: "Ativo", data_cadastro: "2026-02-09" },
-    { id: 'f2', nome: "JOEL HONORIO MENDES", cpf: "153.972.066-79", plano: "PLANO CORTE QUINZENAL", data_vencimento: "01/02", status: "Ativo", data_cadastro: "2026-02-01" },
-    { id: 'f3', nome: "Astrogildo Antunes", cpf: "036.928.906-48", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "13/01", status: "Ativo", data_cadastro: "2026-01-13" },
-    { id: 'f4', nome: "Marcelo Augusto", cpf: "096.829.906-70", plano: "PLANO CORTE QUINZENAL", data_vencimento: "26/11", status: "Ativo", data_cadastro: "2025-11-26" },
-    { id: 'f5', nome: "Douglas Diego", cpf: "130.452.446-96", plano: "PLANO BARBA ILIMITADO", data_vencimento: "01/08", status: "Ativo", data_cadastro: "2025-08-01" },
-    { id: 'f6', nome: "Ulisses aparecido Ramos", cpf: "099.037.066-69", plano: "PLANO CORTE QUINZENAL", data_vencimento: "15/07", status: "Ativo", data_cadastro: "2025-07-15" },
-    { id: 'f7', nome: "Lucas Alberto", cpf: "136.022.826-86", plano: "PLANO CORTE QUINZENAL", data_vencimento: "06/06", status: "Ativo", data_cadastro: "2025-06-06" },
-    { id: 'f8', nome: "Emerson Charles De Oliveira Silva", cpf: "126.733.526-27", plano: "PLANO CORTE QUINZENAL", data_vencimento: "23/04", status: "Ativo", data_cadastro: "2025-04-23" },
-    { id: 'f9', nome: "Katriel Castro silva", cpf: "174.618.446-95", plano: "PLANO CORTE E BARBA QUINZENAL", data_vencimento: "18/04", status: "Ativo", data_cadastro: "2025-04-18" },
-    { id: 'f10', nome: "Rian James", cpf: "099.299.416-06", plano: "PLANO CORTE MENSAL", data_vencimento: "12/04", status: "Ativo", data_cadastro: "2025-04-12" },
-    { id: 'f11', nome: "Gabriel alves Parreiras", cpf: "135.503.866-99", plano: "PLANO CORTE QUINZENAL", data_vencimento: "28/03", status: "Ativo", data_cadastro: "2025-03-28" },
-    { id: 'f12', nome: "Alexandre José Pereira Pinto", cpf: "113.100.246-69", plano: "PLANO CORTE MENSAL", data_vencimento: "22/03", status: "Ativo", data_cadastro: "2025-03-22" }
-  ];
-
   const [assinantes, setAssinantes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,6 +43,7 @@ const Planos = () => {
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
+    telefone: '',
     plano: 'PLANO CORTE MENSAL',
     data_vencimento: '',
     ultimo_pagamento: '',
@@ -96,14 +82,14 @@ const Planos = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Se o banco estiver vazio, usa os dados do PDF como inicial
-        setAssinantes(data.length > 0 ? data : dadosIniciais);
+        // Carrega 100% de dados reais da API. Se for array vazio, zera a lista.
+        setAssinantes(Array.isArray(data) ? data : []);
       } else {
-        setAssinantes(dadosIniciais);
+        setAssinantes([]);
       }
     } catch (error) {
       console.error('Erro ao carregar assinantes:', error);
-      setAssinantes(dadosIniciais);
+      setAssinantes([]);
     } finally {
       setLoading(false);
     }
@@ -139,10 +125,6 @@ const Planos = () => {
   };
 
   const handleDelete = async (id) => {
-    if (typeof id === 'string' && id.startsWith('f')) {
-      setAssinantes(prev => prev.filter(a => a.id !== id));
-      return;
-    }
     if (!confirm('Deseja remover este assinante?')) return;
     try {
       const token = localStorage.getItem('token');
@@ -160,6 +142,7 @@ const Planos = () => {
     setFormData({
       nome: '',
       cpf: '',
+      telefone: '',
       plano: 'PLANO CORTE MENSAL',
       data_vencimento: '',
       ultimo_pagamento: '',
@@ -173,7 +156,8 @@ const Planos = () => {
     setEditingAssinante(assinante);
     setFormData({
       nome: assinante.nome,
-      cpf: assinante.cpf,
+      cpf: assinante.cpf || '',
+      telefone: assinante.telefone || '',
       plano: assinante.plano,
       data_vencimento: assinante.data_vencimento,
       ultimo_pagamento: assinante.ultimo_pagamento || '',
@@ -185,7 +169,8 @@ const Planos = () => {
 
   const filtrados = assinantes.filter(a => 
     a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (a.cpf && a.cpf.includes(searchTerm))
+    (a.cpf && a.cpf.includes(searchTerm)) ||
+    (a.telefone && a.telefone.includes(searchTerm))
   );
 
   const assinantesPorPlano = planosDisponiveis.reduce((acc, plano) => {
@@ -207,7 +192,7 @@ const Planos = () => {
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
-              placeholder="Buscar por nome ou CPF..." 
+              placeholder="Buscar por nome, CPF ou Tel..." 
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -230,9 +215,13 @@ const Planos = () => {
                     <Label>Nome Completo</Label>
                     <Input required value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} />
                   </div>
-                  <div className="space-y-2 col-span-2">
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
                     <Label>CPF</Label>
-                    <Input required placeholder="000.000.000-00" value={formData.cpf} onChange={(e) => setFormData({...formData, cpf: e.target.value})} />
+                    <Input placeholder="000.000.000-00" value={formData.cpf} onChange={(e) => setFormData({...formData, cpf: e.target.value})} />
+                  </div>
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Telefone</Label>
+                    <Input placeholder="(00) 00000-0000" value={formData.telefone} onChange={(e) => setFormData({...formData, telefone: e.target.value})} />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Plano</Label>
@@ -282,14 +271,11 @@ const Planos = () => {
 
       <div className="space-y-8">
         {planosDisponiveis.map(plano => (
-          /* Aqui injetamos a cor específica de cada box baseada no dicionário criado */
           <Card key={plano} className={`shadow-sm border-none overflow-hidden ${coresPorPlano[plano] || 'bg-white'}`}>
-            {/* O cabeçalho foi fixado com fundo cinza sólido para não misturar com as cores transparentes */}
             <CardHeader className="bg-gray-50 border-b py-4">
               <CardTitle className="text-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-amber-600" />
-                  {/* Adicionado o texto "(SOBRANCELHA INCLUSO)" visualmente */}
                   <span className="font-bold">{plano} (SOBRANCELHA INCLUSO)</span>
                 </div>
                 <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
@@ -304,6 +290,7 @@ const Planos = () => {
                     <tr>
                       <th className="px-6 py-4">Assinante</th>
                       <th className="px-6 py-4">CPF</th>
+                      <th className="px-6 py-4">Telefone</th>
                       <th className="px-6 py-4">Vencimento</th>
                       <th className="px-6 py-4">Última Visita</th>
                       <th className="px-6 py-4">Status</th>
@@ -313,7 +300,7 @@ const Planos = () => {
                   <tbody className="divide-y divide-gray-100/50">
                     {assinantesPorPlano[plano].length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="px-6 py-10 text-center text-gray-400 italic">Nenhum assinante ativo neste plano.</td>
+                        <td colSpan="7" className="px-6 py-10 text-center text-gray-400 italic">Nenhum assinante ativo neste plano.</td>
                       </tr>
                     ) : (
                       assinantesPorPlano[plano].map((a) => (
@@ -325,6 +312,11 @@ const Planos = () => {
                           <td className="px-6 py-4">
                             <span className="flex items-center gap-1 text-gray-700">
                               <IdCard className="h-3 w-3 text-gray-400" /> {a.cpf || '--'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="flex items-center gap-1 text-gray-700">
+                              <Phone className="h-3 w-3 text-gray-400" /> {a.telefone || '--'}
                             </span>
                           </td>
                           <td className="px-6 py-4 font-bold text-amber-600">{a.data_vencimento || '--'}</td>
