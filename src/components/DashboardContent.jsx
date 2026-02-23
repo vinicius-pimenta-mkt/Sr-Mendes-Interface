@@ -65,6 +65,7 @@ const DashboardContent = () => {
       case 'Confirmado': return 'bg-green-100 text-green-800';
       case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
       case 'Cancelado':  return 'bg-red-100 text-red-800';
+      case 'Bloqueado':  return 'bg-gray-800 text-white';
       default:           return 'bg-gray-100 text-gray-800';
     }
   };
@@ -75,9 +76,9 @@ const DashboardContent = () => {
                  String(hoje.getMonth() + 1).padStart(2, '0') + '-' + 
                  String(hoje.getDate()).padStart(2, '0');
 
-  // Agendamentos futuros filtrados pelo backend
-  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas');
-  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri');
+  // Filtro atualizado: Exclui qualquer agendamento com status "Bloqueado" da visão do Dashboard
+  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas' && a.status !== 'Bloqueado');
+  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri' && a.status !== 'Bloqueado');
 
   if (loading) {
     return (
