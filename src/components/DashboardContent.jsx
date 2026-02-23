@@ -26,7 +26,6 @@ const DashboardContent = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    // Atualizar a cada 5 minutos para manter a hora atualizada
     const interval = setInterval(fetchDashboardData, 300000);
     return () => clearInterval(interval);
   }, []);
@@ -34,6 +33,7 @@ const DashboardContent = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
+      // MANTÉM SUA ROTA ORIGINAL INTACTA
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -65,18 +65,17 @@ const DashboardContent = () => {
       case 'Confirmado': return 'bg-green-100 text-green-800';
       case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
       case 'Cancelado':  return 'bg-red-100 text-red-800';
-      case 'Bloqueado':  return 'bg-gray-800 text-white';
+      case 'Bloqueado':  return 'bg-gray-800 text-white'; // Cor do bloqueado mantida por precaução
       default:           return 'bg-gray-100 text-gray-800';
     }
   };
 
-  // Obtém a data de hoje no formato YYYY-MM-DD considerando fuso local
   const hoje = new Date();
   const hojeStr = hoje.getFullYear() + '-' + 
                  String(hoje.getMonth() + 1).padStart(2, '0') + '-' + 
                  String(hoje.getDate()).padStart(2, '0');
 
-  // Filtro atualizado: Exclui qualquer agendamento com status "Bloqueado" da visão do Dashboard
+  // ÚNICA ALTERAÇÃO NO FRONTEND: Esconde os bloqueados visualmente das tabelas
   const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas' && a.status !== 'Bloqueado');
   const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri' && a.status !== 'Bloqueado');
 
@@ -93,7 +92,6 @@ const DashboardContent = () => {
 
   return (
     <div className="space-y-6">
-      {/* Dashboard Title */}
       <div className="flex items-center space-x-4">
         <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
         <div>
@@ -102,7 +100,6 @@ const DashboardContent = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border-l-4 border-l-yellow-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -153,9 +150,7 @@ const DashboardContent = () => {
         </Card>
       </div>
 
-      {/* Content Grid - Duas Tabelas Separadas (Somente Futuros) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Lucas - Tabela */}
         <Card className="shadow-sm">
           <CardHeader className="bg-yellow-50/50 border-b">
             <CardTitle className="flex items-center gap-2 text-lg text-yellow-800">
@@ -195,7 +190,6 @@ const DashboardContent = () => {
           </CardContent>
         </Card>
 
-        {/* Yuri - Tabela */}
         <Card className="shadow-sm">
           <CardHeader className="bg-green-50/50 border-b">
             <CardTitle className="flex items-center gap-2 text-lg text-green-800">
