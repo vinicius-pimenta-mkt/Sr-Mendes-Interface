@@ -12,15 +12,21 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import logo from '../assets/logo.png';
 
-const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
+const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // INJEÇÃO DA MANUS: Verifica se quem está logado é o Yuri
+  const isYuri = user?.role === 'yuri';
+  
+  // LISTA DE MENUS BLINDADA: Esconde Relatórios e Planos se for o Yuri
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
-    { id: 'relatorios', label: 'Relatórios', icon: FileText },
     { id: 'clientes', label: 'Clientes', icon: Users },
-    { id: 'planos', label: 'Planos', icon: UserCheck },
+    ...(!isYuri ? [
+      { id: 'relatorios', label: 'Relatórios', icon: FileText },
+      { id: 'planos', label: 'Planos', icon: UserCheck }
+    ] : []),
   ];
 
   const handleMenuItemClick = (itemId) => {
@@ -96,11 +102,17 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout }) => {
         <div className="p-4 border-t">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-              <span className="text-amber-600 font-semibold text-sm">BM</span>
+              <span className="text-amber-600 font-semibold text-sm">
+                {isYuri ? 'Y' : 'BM'}
+              </span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Beleza Masculina</p>
-              <p className="text-xs text-gray-600">Administrador</p>
+              <p className="text-sm font-medium text-gray-900">
+                {isYuri ? 'Yuri Mendes' : 'Beleza Masculina'}
+              </p>
+              <p className="text-xs text-gray-600">
+                {isYuri ? 'Barbeiro' : 'Administrador'}
+              </p>
             </div>
           </div>
           <Button
