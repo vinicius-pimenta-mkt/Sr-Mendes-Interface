@@ -6,21 +6,21 @@ import Clientes from './Clientes';
 import Relatorios from './Relatorios';
 import Planos from './Planos';
 
-const Dashboard = ({ onLogout }) => {
+const Dashboard = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
 
   const renderContent = () => {
     switch (activeSection) {
       case 'agenda':
-        return <Agenda />;
+        return <Agenda user={user} />;
       case 'clientes':
-        return <Clientes />;
+        return <Clientes user={user} />;
       case 'relatorios':
-        return <Relatorios />;
+        return <Relatorios user={user} />;
       case 'planos':
-        return <Planos />;
+        return <Planos user={user} />;
       default:
-        return <DashboardContent />;
+        return <DashboardContent user={user} />;
     }
   };
 
@@ -30,6 +30,7 @@ const Dashboard = ({ onLogout }) => {
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         onLogout={onLogout}
+        user={user}
       />
       <main className="flex-1 overflow-auto lg:ml-0">
         <div className="p-4 lg:p-8 pt-16 lg:pt-8">
