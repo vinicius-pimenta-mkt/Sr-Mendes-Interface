@@ -33,14 +33,17 @@ import {
   CheckCircle,
   AlertCircle,
   CalendarDays,
+  Filter,
   User,
+  CreditCard,
   Phone,
   Lock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const Agenda = () => {
+const Agenda = ({ user }) => {
+  const isYuri = user?.role === 'yuri';
   const [agendamentos, setAgendamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,11 +62,11 @@ const Agenda = () => {
     preco: '',
     forma_pagamento: 'Dinheiro',
     observacoes: '',
-    barber: 'Lucas'
+    barber: isYuri ? 'Yuri' : 'Lucas'
   });
 
   const [blockData, setBlockData] = useState({
-    barber: 'Ambos',
+    barber: isYuri ? 'Yuri' : 'Ambos',
     data_inicio: format(new Date(), 'yyyy-MM-dd'),
     data_fim: format(new Date(), 'yyyy-MM-dd'),
     hora_inicio: '12:00',
@@ -72,13 +75,27 @@ const Agenda = () => {
   });
 
   const tabelaPrecos = {
-    'Sobrancelha': 15, 'Selagem': 65, 'Relaxamento': 45, 'Pigmentação': 30,
-    'Acabamento (Pezinho)': 25, 'Luzes': 100, 'Limpeza de pele': 40,
-    'Hidratação': 40, 'Finalização penteado': 25, 'Corte + Sobrancelha': 60,
-    'Corte Masculino': 45, 'Raspar na maquina': 35, 'Corte infantil no carrinho': 50,
-    'Corte infantil': 50, 'Corte + Barba simples': 80, 'Combo Corte + Barboterapia': 90,
-    'Combo Corte + Barba + Sobrancelha': 90, 'Coloração': 35, 'Barboterapia': 50,
-    'Barba Simples': 40, 'Tratamento V.O': 90
+    'Sobrancelha': 15,
+    'Selagem': 65,
+    'Relaxamento': 45,
+    'Pigmentação': 30,
+    'Acabamento (Pezinho)': 25,
+    'Luzes': 100,
+    'Limpeza de pele': 40,
+    'Hidratação': 40,
+    'Finalização penteado': 25,
+    'Corte + Sobrancelha': 60,
+    'Corte Masculino': 45,
+    'Raspar na maquina': 35,
+    'Corte infantil no carrinho': 50,
+    'Corte infantil': 50,
+    'Corte + Barba simples': 80,
+    'Combo Corte + Barboterapia': 90,
+    'Combo Corte + Barba + Sobrancelha': 90,
+    'Coloração': 35,
+    'Barboterapia': 50,
+    'Barba Simples': 40,
+    'Tratamento V.O': 90
   };
 
   const servicos = Object.keys(tabelaPrecos);
@@ -91,24 +108,20 @@ const Agenda = () => {
   const fetchAgendamentos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [resLucas, resYuri] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
+      
+      const requests = [];
+      if (!isYuri) {
+        requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`, {
           headers: { 'Authorization': `Bearer ${token}` },
-        }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        })
-      ]);
+        }).then(res => res.ok ? res.json() : []).then(data => data.map(a => ({ ...a, barber: 'Lucas' }))));
+      }
+      
+      requests.push(fetch(`${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).then(res => res.ok ? res.json() : []).then(data => data.map(a => ({ ...a, barber: 'Yuri' }))));
 
-      let allAgendamentos = [];
-      if (resLucas.ok) {
-        const dataLucas = await resLucas.json();
-        allAgendamentos = [...allAgendamentos, ...dataLucas.map(a => ({ ...a, barber: 'Lucas' }))];
-      }
-      if (resYuri.ok) {
-        const dataYuri = await resYuri.json();
-        allAgendamentos = [...allAgendamentos, ...dataYuri.map(a => ({ ...a, barber: 'Yuri' }))];
-      }
+      const results = await Promise.all(requests);
+      const allAgendamentos = results.flat();
 
       setAgendamentos(allAgendamentos);
     } catch (error) {
@@ -129,28 +142,35 @@ const Agenda = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     // TRAVA: Impede de salvar agendamentos aos domingos e segundas
     const [ano, mes, dia] = formData.data.split('-');
     const dataObj = new Date(ano, mes - 1, dia);
     const diaSemana = dataObj.getDay();
-    if (diaSemana === 0 || diaSemana === 1) {
+    if ((diaSemana === 0 || diaSemana === 1) && formData.status !== 'Bloqueado') {
       alert('A barbearia é fechada aos Domingos e Segundas-feiras. Selecione outra data.');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      const isYuri = formData.barber === 'Yuri';
-      const baseUrl = isYuri 
+      const isYuriData = formData.barber === 'Yuri';
+      const baseUrl = isYuriData 
         ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
         : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
       const url = editingAgendamento ? `${baseUrl}/${editingAgendamento.id}` : baseUrl;
       const method = editingAgendamento ? 'PUT' : 'POST';
 
-      const precoEmCentavos = formData.preco
-        ? Math.round(parseFloat(formData.preco.replace(',', '.')) * 100) : null;
+      // BLINDAGEM DO PREÇO: Limpa letras, "R$" e espaços antes de converter pra enviar ao banco
+      let precoEmCentavos = null;
+      if (formData.preco) {
+        const stringLimpa = formData.preco.toString().replace(/[^\d.,]/g, '');
+        const valorFloat = parseFloat(stringLimpa.replace(',', '.'));
+        if (!isNaN(valorFloat)) {
+          precoEmCentavos = Math.round(valorFloat * 100);
+        }
+      }
 
       const payload = { ...formData, preco: precoEmCentavos };
 
@@ -292,8 +312,8 @@ const Agenda = () => {
       if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
     }
 
-    const isYuri = agendamento.barber === 'Yuri';
-    const baseUrl = isYuri 
+    const isYuriData = agendamento.barber === 'Yuri';
+    const baseUrl = isYuriData 
       ? `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos-yuri`
       : `${import.meta.env.VITE_API_BASE_URL}/api/agendamentos`;
 
@@ -310,16 +330,47 @@ const Agenda = () => {
 
   const resetForm = () => {
     setFormData({
-      cliente_nome: '', cliente_telefone: '', servico: '',
+      cliente_nome: '',
+      cliente_telefone: '',
+      servico: '',
       data: format(selectedDate || new Date(), 'yyyy-MM-dd'),
-      hora: '', status: 'Pendente', preco: '',
-      forma_pagamento: 'Dinheiro', observacoes: '', barber: 'Lucas'
+      hora: '',
+      status: 'Pendente',
+      preco: '',
+      forma_pagamento: 'Dinheiro',
+      observacoes: '',
+      barber: isYuri ? 'Yuri' : 'Lucas'
     });
     setEditingAgendamento(null);
   };
 
   const openEditDialog = (agendamento) => {
     setEditingAgendamento(agendamento);
+    
+    // BLINDAGEM DO PREÇO: Resgata preços do BD mesmo se estiverem bugados ou com texto
+    let safePreco = '';
+    if (agendamento?.preco !== null && agendamento?.preco !== undefined) {
+      const precoRaw = agendamento.preco;
+      
+      if (typeof precoRaw === 'string' && isNaN(Number(precoRaw))) {
+        // Se houver lixo salvo no banco (como a palavra "NaN" ou "45,00")
+        const limpa = precoRaw.replace(/[^\d,]/g, ''); 
+        if (limpa) safePreco = limpa;
+      } else {
+        const numPreco = Number(precoRaw);
+        if (!isNaN(numPreco)) {
+          // Heurística de resgate: 
+          // Se for > 0 e menor que 500 (ex: 45), assumimos que um bug antigo salvou em Reais e não multiplicou por 100
+          if (numPreco > 0 && numPreco < 500) {
+            safePreco = numPreco.toString().replace('.', ',');
+          } else {
+            // Fluxo normal em centavos (ex: 4500 para R$ 45)
+            safePreco = (numPreco / 100).toString().replace('.', ',');
+          }
+        }
+      }
+    }
+
     setFormData({
       cliente_nome: agendamento?.cliente_nome ?? '',
       cliente_telefone: agendamento?.cliente_telefone ?? '',
@@ -327,10 +378,10 @@ const Agenda = () => {
       data: agendamento?.data ?? '',
       hora: agendamento?.hora ?? '',
       status: agendamento?.status ?? 'Pendente',
-      preco: agendamento?.preco ? (agendamento.preco / 100).toString().replace('.', ',') : '',
+      preco: safePreco,
       forma_pagamento: agendamento?.forma_pagamento ?? 'Dinheiro',
       observacoes: agendamento?.observacoes ?? '',
-      barber: agendamento?.barber ?? 'Lucas'
+      barber: agendamento?.barber ?? (isYuri ? 'Yuri' : 'Lucas')
     });
     setDialogOpen(true);
   };
@@ -467,7 +518,6 @@ const Agenda = () => {
                     setCalendarOpen(false);
                   }
                 }}
-                // TRAVA NO CALENDÁRIO VISUAL: Desativa clique nos domingos (0) e segundas (1)
                 disabled={(date) => date.getDay() === 0 || date.getDay() === 1}
                 locale={ptBR}
                 initialFocus
@@ -486,17 +536,19 @@ const Agenda = () => {
                 <DialogTitle>Bloquear Horários na Agenda</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleBlockSubmit} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>Agenda(s) a bloquear</Label>
-                  <Select value={blockData.barber} onValueChange={(v) => setBlockData({...blockData, barber: v})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Ambos">Geral (Lucas e Yuri)</SelectItem>
-                      <SelectItem value="Lucas">Apenas Lucas</SelectItem>
-                      <SelectItem value="Yuri">Apenas Yuri</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!isYuri && (
+                  <div className="space-y-2">
+                    <Label>Agenda(s) a bloquear</Label>
+                    <Select value={blockData.barber} onValueChange={(v) => setBlockData({...blockData, barber: v})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Ambos">Geral (Lucas e Yuri)</SelectItem>
+                        <SelectItem value="Lucas">Apenas Lucas</SelectItem>
+                        <SelectItem value="Yuri">Apenas Yuri</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Data de Início</Label>
@@ -546,6 +598,7 @@ const Agenda = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
+                  {!isYuri && (
                   <div className="space-y-2 col-span-2">
                     <Label>Barbeiro</Label>
                     <Select value={formData.barber} onValueChange={(v) => setFormData({...formData, barber: v})}>
@@ -556,13 +609,23 @@ const Agenda = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  )}
                   <div className="space-y-2 col-span-2">
                     <Label>Nome do Cliente</Label>
-                    <Input required value={formData.cliente_nome} onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})} placeholder="Nome completo" />
+                    <Input 
+                      required 
+                      value={formData.cliente_nome} 
+                      onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
+                      placeholder="Nome completo"
+                    />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Telefone do Cliente</Label>
-                    <Input value={formData.cliente_telefone} onChange={(e) => setFormData({...formData, cliente_telefone: e.target.value})} placeholder="(00) 00000-0000" />
+                    <Input 
+                      value={formData.cliente_telefone} 
+                      onChange={(e) => setFormData({...formData, cliente_telefone: e.target.value})}
+                      placeholder="(00) 00000-0000"
+                    />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label>Serviço</Label>
@@ -575,15 +638,29 @@ const Agenda = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Data</Label>
-                    <Input type="date" required value={formData.data} onChange={(e) => setFormData({...formData, data: e.target.value})} />
+                    <Input 
+                      type="date" 
+                      required 
+                      value={formData.data} 
+                      onChange={(e) => setFormData({...formData, data: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Hora</Label>
-                    <Input type="time" required value={formData.hora} onChange={(e) => setFormData({...formData, hora: e.target.value})} />
+                    <Input 
+                      type="time" 
+                      required 
+                      value={formData.hora} 
+                      onChange={(e) => setFormData({...formData, hora: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Preço (R$)</Label>
-                    <Input value={formData.preco} onChange={(e) => setFormData({...formData, preco: e.target.value})} placeholder="0,00" />
+                    <Input 
+                      value={formData.preco} 
+                      onChange={(e) => setFormData({...formData, preco: e.target.value})}
+                      placeholder="0,00"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Forma de Pagamento</Label>
@@ -620,7 +697,7 @@ const Agenda = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {renderTable('Lucas')}
+        {!isYuri && renderTable('Lucas')}
         {renderTable('Yuri')}
       </div>
     </div>
