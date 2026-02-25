@@ -33,9 +33,12 @@ import {
 } from "lucide-react";
 import { format, subDays } from 'date-fns';
 
-const Relatorios = () => {
+// Injeção: Recebendo a variável user
+const Relatorios = ({ user }) => {
+  const isYuri = user?.role === 'yuri';
   const [periodo, setPeriodo] = useState("mes");
-  const [barber, setBarber] = useState("Geral");
+  // Se for o Yuri, o barbeiro selecionado por padrão é ele
+  const [barber, setBarber] = useState(isYuri ? "Yuri" : "Geral");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
@@ -74,7 +77,6 @@ const Relatorios = () => {
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
           
           if (Array.isArray(data.top_clients)) {
-            // Ordenar clientes pelo valor gasto (maior para menor)
             const clientesOrdenados = data.top_clients
               .map(c => ({
                 nome: c.name,
@@ -172,7 +174,7 @@ const Relatorios = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 no-print">
+      <div className={`grid grid-cols-1 ${!isYuri ? 'md:grid-cols-2' : ''} gap-4 no-print`}>
         <Card className="shadow-sm">
           <CardContent className="pt-6 flex items-center gap-4">
             <Calendar className="h-5 w-5 text-amber-600" />
@@ -191,22 +193,26 @@ const Relatorios = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
-          <CardContent className="pt-6 flex items-center gap-4">
-            <User className="h-5 w-5 text-amber-600" />
-            <div className="flex-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Barbeiro</label>
-              <Select value={barber} onValueChange={setBarber}>
-                <SelectTrigger className="border-none shadow-none p-0 h-auto font-semibold focus:ring-0"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Geral">Geral (Todos)</SelectItem>
-                  <SelectItem value="Lucas">Lucas</SelectItem>
-                  <SelectItem value="Yuri">Yuri</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        
+        {/* Esconde a caixa de selecionar barbeiro se for o Yuri */}
+        {!isYuri && (
+          <Card className="shadow-sm">
+            <CardContent className="pt-6 flex items-center gap-4">
+              <User className="h-5 w-5 text-amber-600" />
+              <div className="flex-1">
+                <label className="text-xs font-bold text-gray-500 uppercase">Barbeiro</label>
+                <Select value={barber} onValueChange={setBarber}>
+                  <SelectTrigger className="border-none shadow-none p-0 h-auto font-semibold focus:ring-0"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Geral">Geral (Todos)</SelectItem>
+                    <SelectItem value="Lucas">Lucas</SelectItem>
+                    <SelectItem value="Yuri">Yuri</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Tabs defaultValue="servicos" className="space-y-6">
@@ -234,7 +240,6 @@ const Relatorios = () => {
                       <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8f8f8'}} />
                       <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
                       
-                      {/* CÓDIGO CORRIGIDO AQUI SEM FRAGMENTOS */}
                       {(barber === 'Geral' || barber === 'Lucas') && (
                         <Bar name="Lucas" dataKey="lucas_qty" fill="#FFD700" radius={[4, 4, 0, 0]} barSize={barber === 'Geral' ? 30 : 50} />
                       )}
@@ -256,11 +261,11 @@ const Relatorios = () => {
 
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Detalhamento por Barbeiro</CardTitle>
+              <CardTitle className="text-lg">Detalhamento</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {renderTabelaServicos('Lucas', servicosMaisVendidos)}
+              <div className={`grid grid-cols-1 ${!isYuri ? 'md:grid-cols-2' : ''} gap-8`}>
+                {!isYuri && renderTabelaServicos('Lucas', servicosMaisVendidos)}
                 {renderTabelaServicos('Yuri', servicosMaisVendidos)}
               </div>
             </CardContent>
@@ -330,7 +335,7 @@ const Relatorios = () => {
                       <div className="flex items-center gap-3">
                         <DollarSign className="h-5 w-5 text-amber-600" />
                         <span className="text-sm font-bold text-amber-900">
-                          {barber === 'Yuri' ? 'TOTAL BRUTO' : 'RECEITA TOTAL'}
+                          {isYuri ? 'TOTAL BRUTO' : 'RECEITA TOTAL'}
                         </span>
                       </div>
                       <div className="text-right">
@@ -338,11 +343,11 @@ const Relatorios = () => {
                       </div>
                     </div>
 
-                    {barber === 'Yuri' && (
+                    {isYuri && (
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
                         <div className="flex items-center gap-3">
                           <Badge className="bg-green-600">45%</Badge>
-                          <span className="text-sm font-bold text-green-900">TOTAL LÍQUIDO (COMISSÃO)</span>
+                          <span className="text-sm font-bold text-green-900">SUA COMISSÃO (LÍQUIDO)</span>
                         </div>
                         <div className="text-right">
                           <p className="font-black text-lg text-green-700">R$ {comissaoYuri.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
