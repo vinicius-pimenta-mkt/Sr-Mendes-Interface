@@ -38,7 +38,7 @@ const Relatorios = ({ user }) => {
   const isYuri = user?.role === 'yuri';
   const [periodo, setPeriodo] = useState("mes");
   // Se for o Yuri, o barbeiro selecionado por padrão é ele
-  const [barber, setBarber] = useState(isYuri ? "Yuri" : "Geral");
+  const [barber, setBarber] = useState("Yuri");
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
