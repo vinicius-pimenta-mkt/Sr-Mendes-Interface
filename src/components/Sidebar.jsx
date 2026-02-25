@@ -15,16 +15,16 @@ import logo from '../assets/logo.png';
 const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // INJEÇÃO DA MANUS: Verifica se quem está logado é o Yuri
+  // Verifica se quem está logado é o Yuri
   const isYuri = user?.role === 'yuri';
   
-  // LISTA DE MENUS BLINDADA: Esconde Relatórios e Planos se for o Yuri
+  // LISTA DE MENUS: Relatórios liberado para todos. Planos restrito ao Admin.
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'clientes', label: 'Clientes', icon: Users },
+    { id: 'relatorios', label: 'Relatórios', icon: FileText },
     ...(!isYuri ? [
-      { id: 'relatorios', label: 'Relatórios', icon: FileText },
       { id: 'planos', label: 'Planos', icon: UserCheck }
     ] : []),
   ];
