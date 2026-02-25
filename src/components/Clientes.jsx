@@ -20,7 +20,10 @@ import {
   Search
 } from 'lucide-react';
 
-const Clientes = () => {
+const Clientes = ({ user }) => {
+  // INJEÇÃO DA MANUS: Verifica se é o Yuri
+  const isYuri = user?.role === 'yuri';
+  
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -264,6 +267,8 @@ const Clientes = () => {
                     </div>
                   </div>
                   
+                  {/* INJEÇÃO DA MANUS: Esconde os botões de edição/exclusão se for o Yuri */}
+                  {!isYuri && (
                   <div className="flex space-x-2">
                     <Button
                       size="sm"
@@ -281,6 +286,7 @@ const Clientes = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -292,4 +298,3 @@ const Clientes = () => {
 };
 
 export default Clientes;
-
