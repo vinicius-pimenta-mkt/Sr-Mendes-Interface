@@ -152,31 +152,40 @@ const Agenda = ({ user }) => {
     }
   };
 
-  // --- NOVO: Funções do Autocomplete de Clientes ---
+// --- NOVO: Super Buscador de Clientes ---
   const handleNameChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, cliente_nome: value });
     
     if (value.length > 0) {
-      // Filtra os clientes que tem o nome parecido com o que está sendo digitado
-      const filtered = clientes.filter(c => 
-        c.nome.toLowerCase().includes(value.toLowerCase())
-      );
+      // Função mágica que arranca acentos e espaços (ex: "João " vira "joao")
+      const limparTexto = (str) => {
+        return str 
+          ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() 
+          : "";
+      };
+
+      const termoBusca = limparTexto(value);
+
+      // Filtra clientes pelo nome "limpo" OU pelo telefone
+      const filtered = clientes.filter(c => {
+        const nomeClienteLimpo = limparTexto(c.nome);
+        const matchNome = nomeClienteLimpo.includes(termoBusca);
+        
+        // Limpa o telefone do banco só pra garantir a busca pelos números
+        const telefoneLimpo = c.telefone ? c.telefone.replace(/\D/g, '') : '';
+        const termoTelefoneLimpo = value.replace(/\D/g, '');
+        
+        const matchTelefone = termoTelefoneLimpo.length > 0 && telefoneLimpo.includes(termoTelefoneLimpo);
+
+        return matchNome || matchTelefone;
+      });
+      
       setFilteredClientes(filtered);
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
     }
-  };
-
-  const handleSelectClient = (cliente) => {
-    // Quando clica no cliente da lista, preenche nome e telefone!
-    setFormData({
-      ...formData,
-      cliente_nome: cliente.nome,
-      cliente_telefone: cliente.telefone || ''
-    });
-    setShowSuggestions(false);
   };
   // --------------------------------------------------
 
