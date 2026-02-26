@@ -6,7 +6,8 @@ import {
   LogOut,
   Menu,
   X,
-  UserCheck
+  UserCheck,
+  Package // <-- NOVO ÍCONE DE CAIXA IMPORTADO AQUI
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -18,11 +19,12 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
   // Verifica se quem está logado é o Yuri
   const isYuri = user?.role === 'yuri';
   
-  // LISTA DE MENUS: Relatórios liberado para todos. Planos restrito ao Admin.
+  // LISTA DE MENUS: Estoque e Relatórios liberados. Planos restrito ao Admin.
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'clientes', label: 'Clientes', icon: Users },
+    { id: 'produtos', label: 'Estoque', icon: Package }, // <-- NOVO BOTÃO DE ESTOQUE AQUI
     { id: 'relatorios', label: 'Relatórios', icon: FileText },
     ...(!isYuri ? [
       { id: 'planos', label: 'Planos', icon: UserCheck }
