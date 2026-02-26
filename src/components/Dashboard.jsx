@@ -5,6 +5,7 @@ import Agenda from './Agenda';
 import Clientes from './Clientes';
 import Relatorios from './Relatorios';
 import Planos from './Planos';
+import Produtos from './Produtos'; // <-- NOVA TELA IMPORTADA AQUI
 
 const Dashboard = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -19,6 +20,8 @@ const Dashboard = ({ user, onLogout }) => {
         return <Relatorios user={user} />;
       case 'planos':
         return <Planos user={user} />;
+      case 'produtos':               // <-- ROTEAMENTO DA NOVA TELA AQUI
+        return <Produtos user={user} />;
       default:
         return <DashboardContent user={user} />;
     }
