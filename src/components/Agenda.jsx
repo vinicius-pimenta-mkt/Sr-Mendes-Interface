@@ -45,6 +45,10 @@ import { ptBR } from 'date-fns/locale';
 const Agenda = ({ user }) => {
   const isYuri = user?.role === 'yuri';
   const [agendamentos, setAgendamentos] = useState([]);
+  const [clientes, setClientes] = useState([]); // <- NOVO: Guarda todos os clientes do banco
+  const [filteredClientes, setFilteredClientes] = useState([]); // <- NOVO: Guarda clientes filtrados pela busca
+  const [showSuggestions, setShowSuggestions] = useState(false); // <- NOVO: Controla se a listinha aparece
+  
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
@@ -103,7 +107,24 @@ const Agenda = ({ user }) => {
 
   useEffect(() => {
     fetchAgendamentos();
+    fetchClientes(); // <- NOVO: Puxa a lista de clientes ao abrir a tela
   }, []);
+
+  // --- NOVO: Função para buscar a lista de clientes no banco ---
+  const fetchClientes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assinantes`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setClientes(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+    }
+  };
 
   const fetchAgendamentos = async () => {
     try {
@@ -131,6 +152,34 @@ const Agenda = ({ user }) => {
     }
   };
 
+  // --- NOVO: Funções do Autocomplete de Clientes ---
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, cliente_nome: value });
+    
+    if (value.length > 0) {
+      // Filtra os clientes que tem o nome parecido com o que está sendo digitado
+      const filtered = clientes.filter(c => 
+        c.nome.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredClientes(filtered);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectClient = (cliente) => {
+    // Quando clica no cliente da lista, preenche nome e telefone!
+    setFormData({
+      ...formData,
+      cliente_nome: cliente.nome,
+      cliente_telefone: cliente.telefone || ''
+    });
+    setShowSuggestions(false);
+  };
+  // --------------------------------------------------
+
   const handleServicoChange = (value) => {
     const precoSugerido = tabelaPrecos[value] || 0;
     setFormData({
@@ -143,7 +192,6 @@ const Agenda = ({ user }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // TRAVA: Impede de salvar agendamentos aos domingos e segundas
     const [ano, mes, dia] = formData.data.split('-');
     const dataObj = new Date(ano, mes - 1, dia);
     const diaSemana = dataObj.getDay();
@@ -162,7 +210,6 @@ const Agenda = ({ user }) => {
       const url = editingAgendamento ? `${baseUrl}/${editingAgendamento.id}` : baseUrl;
       const method = editingAgendamento ? 'PUT' : 'POST';
 
-      // BLINDAGEM DO PREÇO: Limpa letras, "R$" e espaços antes de converter pra enviar ao banco
       let precoEmCentavos = null;
       if (formData.preco) {
         const stringLimpa = formData.preco.toString().replace(/[^\d.,]/g, '');
@@ -342,29 +389,25 @@ const Agenda = ({ user }) => {
       barber: isYuri ? 'Yuri' : 'Lucas'
     });
     setEditingAgendamento(null);
+    setShowSuggestions(false); // Reseta a listinha ao fechar
   };
 
   const openEditDialog = (agendamento) => {
     setEditingAgendamento(agendamento);
     
-    // BLINDAGEM DO PREÇO: Resgata preços do BD mesmo se estiverem bugados ou com texto
     let safePreco = '';
     if (agendamento?.preco !== null && agendamento?.preco !== undefined) {
       const precoRaw = agendamento.preco;
       
       if (typeof precoRaw === 'string' && isNaN(Number(precoRaw))) {
-        // Se houver lixo salvo no banco (como a palavra "NaN" ou "45,00")
         const limpa = precoRaw.replace(/[^\d,]/g, ''); 
         if (limpa) safePreco = limpa;
       } else {
         const numPreco = Number(precoRaw);
         if (!isNaN(numPreco)) {
-          // Heurística de resgate: 
-          // Se for > 0 e menor que 500 (ex: 45), assumimos que um bug antigo salvou em Reais e não multiplicou por 100
           if (numPreco > 0 && numPreco < 500) {
             safePreco = numPreco.toString().replace('.', ',');
           } else {
-            // Fluxo normal em centavos (ex: 4500 para R$ 45)
             safePreco = (numPreco / 100).toString().replace('.', ',');
           }
         }
@@ -610,15 +653,37 @@ const Agenda = ({ user }) => {
                     </Select>
                   </div>
                   )}
-                  <div className="space-y-2 col-span-2">
+                  
+                  {/* --- INÍCIO DA MÁGICA: CAMPO INTELIGENTE --- */}
+                  <div className="space-y-2 col-span-2 relative">
                     <Label>Nome do Cliente</Label>
                     <Input 
                       required 
                       value={formData.cliente_nome} 
-                      onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
-                      placeholder="Nome completo"
+                      onChange={handleNameChange}
+                      onFocus={() => { if(formData.cliente_nome) setShowSuggestions(true) }}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay para dar tempo de clicar
+                      placeholder="Nome completo ou digite para buscar..."
                     />
+                    
+                    {/* Lista suspensa de clientes */}
+                    {showSuggestions && filteredClientes.length > 0 && (
+                      <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto mt-1">
+                        {filteredClientes.map((c, idx) => (
+                          <li
+                            key={idx}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm transition-colors border-b last:border-0"
+                            onClick={() => handleSelectClient(c)}
+                          >
+                            <div className="font-medium text-gray-800">{c.nome}</div>
+                            {c.telefone && <div className="text-xs text-gray-500">{c.telefone}</div>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
+                  {/* --- FIM DA MÁGICA --- */}
+
                   <div className="space-y-2 col-span-2">
                     <Label>Telefone do Cliente</Label>
                     <Input 
