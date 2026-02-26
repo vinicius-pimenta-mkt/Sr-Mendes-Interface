@@ -116,7 +116,8 @@ const Agenda = ({ user }) => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assinantes`, {
+      // CORREÇÃO: Buscando na tabela oficial de clientes em vez de assinantes
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/clientes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -694,7 +695,10 @@ const Agenda = ({ user }) => {
                           <li
                             key={idx}
                             className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm transition-colors border-b last:border-0"
-                            onClick={() => handleSelectClient(c)}
+                            onMouseDown={(e) => {
+                              e.preventDefault(); 
+                              handleSelectClient(c);
+                            }}
                           >
                             <div className="font-medium text-gray-800">{c.nome}</div>
                             {c.telefone && <div className="text-xs text-gray-500">{c.telefone}</div>}
