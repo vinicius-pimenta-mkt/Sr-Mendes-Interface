@@ -45,9 +45,9 @@ import { ptBR } from 'date-fns/locale';
 const Agenda = ({ user }) => {
   const isYuri = user?.role === 'yuri';
   const [agendamentos, setAgendamentos] = useState([]);
-  const [clientes, setClientes] = useState([]); // <- NOVO: Guarda todos os clientes do banco
-  const [filteredClientes, setFilteredClientes] = useState([]); // <- NOVO: Guarda clientes filtrados pela busca
-  const [showSuggestions, setShowSuggestions] = useState(false); // <- NOVO: Controla se a listinha aparece
+  const [clientes, setClientes] = useState([]); // Guarda todos os clientes do banco
+  const [filteredClientes, setFilteredClientes] = useState([]); // Guarda clientes filtrados pela busca
+  const [showSuggestions, setShowSuggestions] = useState(false); // Controla se a listinha aparece
   
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -107,13 +107,15 @@ const Agenda = ({ user }) => {
 
   useEffect(() => {
     fetchAgendamentos();
-    fetchClientes(); // <- NOVO: Puxa a lista de clientes ao abrir a tela
+    fetchClientes(); // Puxa a lista de clientes ao abrir a tela
   }, []);
 
-  // --- NOVO: Função para buscar a lista de clientes no banco ---
+  // --- Função para buscar a lista de clientes no banco ---
   const fetchClientes = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) return;
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assinantes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -152,7 +154,7 @@ const Agenda = ({ user }) => {
     }
   };
 
-// --- NOVO: Super Buscador de Clientes ---
+  // --- Super Buscador de Clientes ---
   const handleNameChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, cliente_nome: value });
@@ -186,6 +188,16 @@ const Agenda = ({ user }) => {
     } else {
       setShowSuggestions(false);
     }
+  };
+
+  // --- FUNÇÃO RECUPERADA: Ao clicar na lista, preenche os campos ---
+  const handleSelectClient = (cliente) => {
+    setFormData({
+      ...formData,
+      cliente_nome: cliente.nome,
+      cliente_telefone: cliente.telefone || ''
+    });
+    setShowSuggestions(false); // Fecha a listinha após o clique
   };
   // --------------------------------------------------
 
@@ -671,7 +683,7 @@ const Agenda = ({ user }) => {
                       value={formData.cliente_nome} 
                       onChange={handleNameChange}
                       onFocus={() => { if(formData.cliente_nome) setShowSuggestions(true) }}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay para dar tempo de clicar
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                       placeholder="Nome completo ou digite para buscar..."
                     />
                     
