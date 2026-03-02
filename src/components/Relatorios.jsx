@@ -29,21 +29,27 @@ import {
   Scissors,
   PieChart as PieChartIcon,
   CreditCard,
-  DollarSign
+  DollarSign,
+  Package // <-- Importação do ícone da caixa adicionada
 } from "lucide-react";
 import { format, subDays } from 'date-fns';
 
-// Injeção: Recebendo a variável user
 const Relatorios = ({ user }) => {
   const isYuri = user?.role === 'yuri';
   const [periodo, setPeriodo] = useState("mes");
-  // Se for o Yuri, o barbeiro selecionado por padrão é ele
-  const [barber, setBarber] = useState("Yuri");
+  
+  // CORREÇÃO: O barbeiro padrão agora é Geral para o Admin, e Yuri se for o Yuri logado
+  const [barber, setBarber] = useState(isYuri ? "Yuri" : "Geral");
+  
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
   const [receitaTempos, setReceitaTempos] = useState([]);
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [agendamentosPeriodo, setAgendamentosPeriodo] = useState([]);
   const [byPayment, setByPayment] = useState([]);
+  
+  // CORREÇÃO: Variável para guardar a tabela de produtos
+  const [produtosVendidos, setProdutosVendidos] = useState([]);
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,6 +81,9 @@ const Relatorios = ({ user }) => {
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
+          
+          // Recebe os produtos do backend
+          setProdutosVendidos(Array.isArray(data.produtos_vendidos) ? data.produtos_vendidos : []);
           
           if (Array.isArray(data.top_clients)) {
             const clientesOrdenados = data.top_clients
@@ -194,7 +203,6 @@ const Relatorios = ({ user }) => {
           </CardContent>
         </Card>
         
-        {/* Esconde a caixa de selecionar barbeiro se for o Yuri */}
         {!isYuri && (
           <Card className="shadow-sm">
             <CardContent className="pt-6 flex items-center gap-4">
@@ -215,7 +223,7 @@ const Relatorios = ({ user }) => {
         )}
       </div>
 
-      <Tabs defaultValue="servicos" className="space-y-6">
+      <Tabs defaultValue="receita" className="space-y-6">
         <TabsList className="bg-gray-100 p-1 rounded-xl no-print">
           <TabsTrigger value="servicos" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Serviços</TabsTrigger>
           <TabsTrigger value="receita" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Faturamento</TabsTrigger>
@@ -325,7 +333,7 @@ const Relatorios = ({ user }) => {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-sm">R$ {p.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                        <p className="text-[10px] text-gray-500">{p.quantidade} serviços</p>
+                        {p.quantidade > 0 && <p className="text-[10px] text-gray-500">{p.quantidade} serviços</p>}
                       </div>
                     </div>
                   ))}
@@ -395,6 +403,45 @@ const Relatorios = ({ user }) => {
               </CardContent>
             </Card>
           </div>
+
+          {/* CORREÇÃO: Nova Tabela de Produtos Inserida Aqui */}
+          <Card className="shadow-sm mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Package className="h-5 w-5 text-amber-600" /> Produtos Vendidos no Período
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {produtosVendidos.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-500 uppercase">
+                      <tr>
+                        <th className="px-4 py-3 rounded-l-lg">Produto</th>
+                        <th className="px-4 py-3 text-center">Unidades Vendidas</th>
+                        <th className="px-4 py-3 text-right rounded-r-lg">Receita Gerada</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {produtosVendidos.map((p, i) => (
+                        <tr key={i} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-bold text-gray-900">{p.produto}</td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant="outline" className="bg-white">{p.qty}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-green-600">
+                            R$ {p.revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center text-gray-400 py-6 italic">Nenhum produto foi vendido neste período.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="clientes" className="space-y-6">
