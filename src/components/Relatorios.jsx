@@ -27,18 +27,15 @@ import {
   Calendar,
   User,
   Scissors,
-  PieChart as PieChartIcon,
   CreditCard,
   DollarSign,
-  Package // <-- Importação do ícone da caixa adicionada
+  Package 
 } from "lucide-react";
 import { format, subDays } from 'date-fns';
 
 const Relatorios = ({ user }) => {
   const isYuri = user?.role === 'yuri';
   const [periodo, setPeriodo] = useState("mes");
-  
-  // CORREÇÃO: O barbeiro padrão agora é Geral para o Admin, e Yuri se for o Yuri logado
   const [barber, setBarber] = useState(isYuri ? "Yuri" : "Geral");
   
   const [servicosMaisVendidos, setServicosMaisVendidos] = useState([]);
@@ -46,8 +43,6 @@ const Relatorios = ({ user }) => {
   const [frequenciaClientes, setFrequenciaClientes] = useState([]);
   const [agendamentosPeriodo, setAgendamentosPeriodo] = useState([]);
   const [byPayment, setByPayment] = useState([]);
-  
-  // CORREÇÃO: Variável para guardar a tabela de produtos
   const [produtosVendidos, setProdutosVendidos] = useState([]);
   
   const [loading, setLoading] = useState(true);
@@ -81,8 +76,6 @@ const Relatorios = ({ user }) => {
           setReceitaTempos(Array.isArray(data.receita_detalhada) ? data.receita_detalhada : []);
           setAgendamentosPeriodo(Array.isArray(data.agendamentos) ? data.agendamentos : []);
           setByPayment(Array.isArray(data.by_payment) ? data.by_payment : []);
-          
-          // Recebe os produtos do backend
           setProdutosVendidos(Array.isArray(data.produtos_vendidos) ? data.produtos_vendidos : []);
           
           if (Array.isArray(data.top_clients)) {
@@ -160,8 +153,15 @@ const Relatorios = ({ user }) => {
     );
   };
 
+  // MATEMÁTICA ATUALIZADA: totalReceita agora soma apenas Serviços (O Backend já separou os produtos)
   const totalReceita = byPayment.reduce((acc, curr) => acc + curr.valor, 0);
+  
+  // A COMISSÃO AGORA É VISÍVEL PARA O YURI E PARA O ADMIN (Quando filtra pelo Yuri)
+  const mostrarComissao = isYuri || barber === 'Yuri';
   const comissaoYuri = totalReceita * 0.45;
+  
+  // TOTAL DE PRODUTOS PARA O RODAPÉ DA TABELA
+  const totalProdutos = produtosVendidos.reduce((acc, p) => acc + p.revenue, 0);
 
   if (loading) {
     return (
@@ -284,7 +284,7 @@ const Relatorios = ({ user }) => {
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-green-600" /> Evolução da Receita {periodo === 'hoje' ? '(Por Hora)' : ''}
+                <TrendingUp className="h-5 w-5 text-green-600" /> Evolução da Receita de Serviços {periodo === 'hoje' ? '(Por Hora)' : ''}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -321,7 +321,7 @@ const Relatorios = ({ user }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
+                <CardTitle className="text-lg">Resumo Financeiro (Apenas Serviços)</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -343,7 +343,7 @@ const Relatorios = ({ user }) => {
                       <div className="flex items-center gap-3">
                         <DollarSign className="h-5 w-5 text-amber-600" />
                         <span className="text-sm font-bold text-amber-900">
-                          {isYuri ? 'TOTAL BRUTO' : 'RECEITA TOTAL'}
+                          TOTAL BRUTO (SERVIÇOS)
                         </span>
                       </div>
                       <div className="text-right">
@@ -351,11 +351,12 @@ const Relatorios = ({ user }) => {
                       </div>
                     </div>
 
-                    {isYuri && (
+                    {/* CAIXINHA DA COMISSÃO APARECE PARA YURI E PARA O ADMIN (FILTRADO) */}
+                    {mostrarComissao && (
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
                         <div className="flex items-center gap-3">
                           <Badge className="bg-green-600">45%</Badge>
-                          <span className="text-sm font-bold text-green-900">SUA COMISSÃO (LÍQUIDO)</span>
+                          <span className="text-sm font-bold text-green-900">COMISSÃO YURI LÍQUIDA</span>
                         </div>
                         <div className="text-right">
                           <p className="font-black text-lg text-green-700">R$ {comissaoYuri.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
@@ -370,7 +371,7 @@ const Relatorios = ({ user }) => {
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <CreditCard className="h-5 w-5 text-blue-600" /> Receita por Forma de Pagamento
+                  <CreditCard className="h-5 w-5 text-blue-600" /> Pagamentos (Serviços)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -404,37 +405,48 @@ const Relatorios = ({ user }) => {
             </Card>
           </div>
 
-          {/* CORREÇÃO: Nova Tabela de Produtos Inserida Aqui */}
-          <Card className="shadow-sm mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+          <Card className="shadow-sm mt-6 border-amber-200">
+            <CardHeader className="bg-amber-50/50">
+              <CardTitle className="text-lg flex items-center gap-2 text-amber-900">
                 <Package className="h-5 w-5 text-amber-600" /> Produtos Vendidos no Período
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {produtosVendidos.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-500 uppercase">
                       <tr>
-                        <th className="px-4 py-3 rounded-l-lg">Produto</th>
-                        <th className="px-4 py-3 text-center">Unidades Vendidas</th>
-                        <th className="px-4 py-3 text-right rounded-r-lg">Receita Gerada</th>
+                        <th className="px-6 py-4">Produto</th>
+                        <th className="px-6 py-4 text-center">Pagamento</th>
+                        <th className="px-6 py-4 text-center">Unidades Vendidas</th>
+                        <th className="px-6 py-4 text-right">Receita Gerada</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {produtosVendidos.map((p, i) => (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-bold text-gray-900">{p.produto}</td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge variant="outline" className="bg-white">{p.qty}</Badge>
+                          <td className="px-6 py-4 font-bold text-gray-900">{p.produto}</td>
+                          <td className="px-6 py-4 text-center">
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600 font-normal">{p.forma_pagamento}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-green-600">
+                          <td className="px-6 py-4 text-center">
+                            <Badge variant="outline" className="bg-white shadow-sm">{p.qty}</Badge>
+                          </td>
+                          <td className="px-6 py-4 text-right font-bold text-green-600">
                             R$ {p.revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                           </td>
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot className="bg-amber-100/50 font-bold border-t-2 border-amber-200">
+                      <tr>
+                        <td colSpan="3" className="px-6 py-4 text-right text-amber-900">TOTAL EM VENDAS DE PRODUTOS:</td>
+                        <td className="px-6 py-4 text-right text-amber-700 text-lg">
+                          R$ {totalProdutos.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               ) : (
