@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, Calendar, Scissors, User } from 'lucide-react';
+import { CheckCircle, Calendar, Scissors, User, DollarSign } from 'lucide-react';
 import logo from '../assets/logo.png'; 
 
-// LISTA OFICIAL DE SERVIÇOS E PREÇOS (Atualizada e em ordem alfabética)
+// LISTA OFICIAL DE SERVIÇOS E PREÇOS
 const SERVICOS_TABELA = [
   { nome: 'Acabamento (Pezinho)', preco: 25.00 },
   { nome: 'Barba Simples', preco: 40.00 },
@@ -48,7 +48,6 @@ const AgendamentoPublico = () => {
     forma_pagamento: 'Dinheiro'
   });
 
-  // Busca os horários livres sempre que a data ou barbeiro mudar
   useEffect(() => {
     if (formData.data && formData.barbeiro) {
       buscarHorarios();
@@ -57,7 +56,7 @@ const AgendamentoPublico = () => {
 
   const buscarHorarios = async () => {
     setLoadingHorarios(true);
-    setFormData(prev => ({ ...prev, hora: '' })); // Limpa a hora escolhida
+    setFormData(prev => ({ ...prev, hora: '' })); 
     try {
       const endpoint = formData.barbeiro === 'Yuri' ? 'agendamentos-yuri' : 'agendamentos';
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/${endpoint}/disponibilidade?data=${formData.data}`);
@@ -82,11 +81,11 @@ const AgendamentoPublico = () => {
         cliente_nome: formData.cliente_nome,
         cliente_telefone: formData.cliente_telefone,
         servico: formData.servicoObj.nome,
-        preco: formData.servicoObj.preco, // Envia o preço fixo tabelado
+        preco: formData.servicoObj.preco,
         data: formData.data,
         hora: formData.hora,
         forma_pagamento: formData.forma_pagamento,
-        status: 'Pendente' // Entra como pendente por padrão
+        status: 'Pendente' 
       };
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/${endpoint}`, {
@@ -108,7 +107,6 @@ const AgendamentoPublico = () => {
     }
   };
 
-  // Pega a data de hoje para impedir agendamento no passado
   const hojeStr = new Date().toISOString().split('T')[0];
 
   if (sucesso) {
@@ -118,104 +116,131 @@ const AgendamentoPublico = () => {
           <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Agendamento Confirmado!</h2>
           <p className="text-gray-600 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia {formData.data.split('-').reverse().join('/')} às {formData.hora}.</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="w-full max-w-xs">Fazer outro agendamento</Button>
+          <Button onClick={() => window.location.reload()} variant="outline" className="w-full max-w-xs border-amber-600 text-amber-600 hover:bg-amber-50">
+            Fazer outro agendamento
+          </Button>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 py-8">
       <Card className="max-w-lg w-full shadow-2xl overflow-hidden border-0">
-        <div className="bg-amber-600 p-6 flex flex-col items-center justify-center text-white">
-          <img src={logo} alt="Beleza Masculina" className="h-16 mb-2 brightness-0 invert" />
-          <h1 className="text-xl font-bold tracking-wider uppercase">Agende seu Horário</h1>
+        
+        {/* NOVO CABEÇALHO BRANCO */}
+        <div className="bg-white p-6 pb-8 flex flex-col items-center justify-center border-b-4 border-amber-600 text-center">
+          <img src={logo} alt="Beleza Masculina" className="h-20 mb-4 drop-shadow-sm" />
+          <h1 className="text-2xl font-black text-gray-900 uppercase tracking-widest leading-tight">
+            Barbearia Beleza<br/>Masculina
+          </h1>
+          <p className="text-gray-500 font-medium mt-2 tracking-wide">
+            Agende seu horário
+          </p>
         </div>
 
-        <CardContent className="p-6">
+        <CardContent className="p-6 bg-white">
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* Escolha do Profissional */}
             <div className="space-y-3">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4"/> 1. Escolha o Profissional</Label>
+              <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4 text-amber-600"/> 1. Escolha o Profissional</Label>
               <div className="grid grid-cols-2 gap-3">
-                <Button type="button" variant={formData.barbeiro === 'Lucas' ? 'default' : 'outline'} className={formData.barbeiro === 'Lucas' ? 'bg-amber-600 hover:bg-amber-700' : ''} onClick={() => setFormData({...formData, barbeiro: 'Lucas'})}>
+                <Button type="button" variant={formData.barbeiro === 'Lucas' ? 'default' : 'outline'} className={formData.barbeiro === 'Lucas' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Lucas'})}>
                   Lucas
                 </Button>
-                <Button type="button" variant={formData.barbeiro === 'Yuri' ? 'default' : 'outline'} className={formData.barbeiro === 'Yuri' ? 'bg-amber-600 hover:bg-amber-700' : ''} onClick={() => setFormData({...formData, barbeiro: 'Yuri'})}>
+                <Button type="button" variant={formData.barbeiro === 'Yuri' ? 'default' : 'outline'} className={formData.barbeiro === 'Yuri' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Yuri'})}>
                   Yuri
                 </Button>
               </div>
             </div>
 
-            {/* Dados do Cliente */}
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4"/> 2. Seus Dados</Label>
-              <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-gray-50" />
-              <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-gray-50" />
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4 text-amber-600"/> 2. Seus Dados</Label>
+              <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-gray-50 border-gray-200" />
+              <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-gray-50 border-gray-200" />
             </div>
 
-            {/* Serviço e Pagamento (Preço Fixo) */}
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><Scissors className="h-4 w-4"/> 3. Serviço</Label>
-              <Select required onValueChange={(v) => setFormData({...formData, servicoObj: SERVICOS_TABELA[v]})}>
-                <SelectTrigger className="bg-gray-50 text-left h-auto py-3">
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <Label className="text-gray-500 font-bold flex items-center gap-2"><Scissors className="h-4 w-4 text-amber-600"/> 3. Serviço</Label>
+              
+              {/* SELECT CORRIGIDO */}
+              <Select required onValueChange={(nomeServico) => {
+                const servicoEncontrado = SERVICOS_TABELA.find(s => s.nome === nomeServico);
+                setFormData({...formData, servicoObj: servicoEncontrado});
+              }}>
+                <SelectTrigger className="bg-gray-50 border-gray-200">
                   <SelectValue placeholder="Selecione o Serviço" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SERVICOS_TABELA.map((s, index) => (
-                    <SelectItem key={index} value={index}>
-                      {s.nome} - R$ {s.preco.toFixed(2).replace('.', ',')}
+                  {SERVICOS_TABELA.map((s) => (
+                    <SelectItem key={s.nome} value={s.nome}>
+                      {s.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
-              <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
-                <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Como deseja pagar?" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="Pix">Pix</SelectItem>
-                  <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
-                  <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
-                </SelectContent>
-              </Select>
+
+              {/* NOVO CAMPO DE PREÇO FIXO E PAGAMENTO */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 font-bold">Valor (R$)</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input 
+                      readOnly 
+                      value={formData.servicoObj ? formData.servicoObj.preco.toFixed(2).replace('.', ',') : '0,00'} 
+                      className="bg-gray-100/50 text-gray-700 font-black pl-9 border-gray-200 cursor-not-allowed" 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 font-bold">Pagamento</Label>
+                  <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
+                    <SelectTrigger className="bg-gray-50 border-gray-200"><SelectValue placeholder="Forma" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                      <SelectItem value="Pix">Pix</SelectItem>
+                      <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
+                      <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
-            {/* Data e Hora */}
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><Calendar className="h-4 w-4"/> 4. Data e Hora</Label>
-              <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-gray-50" />
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <Label className="text-gray-500 font-bold flex items-center gap-2"><Calendar className="h-4 w-4 text-amber-600"/> 4. Data e Hora</Label>
+              <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-gray-50 border-gray-200" />
               
               {formData.data && (
                 <div className="pt-2">
-                  <Label className="text-xs text-gray-500 mb-2 block">Horários Disponíveis:</Label>
+                  <Label className="text-xs text-gray-500 mb-2 block font-bold">Horários Disponíveis:</Label>
                   {loadingHorarios ? (
-                    <div className="text-sm text-amber-600 animate-pulse">Buscando agenda...</div>
+                    <div className="text-sm text-amber-600 animate-pulse font-medium">Buscando agenda livre...</div>
                   ) : horariosLivres.length > 0 ? (
                     <div className="grid grid-cols-4 gap-2">
                       {horariosLivres.map(h => (
                         <button
                           key={h} type="button"
                           onClick={() => setFormData({...formData, hora: h})}
-                          className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-600'}`}
+                          className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-amber-600 text-white border-amber-600 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-600'}`}
                         >
                           {h}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg border border-red-100">Nenhum horário livre para este dia. Selecione outra data.</div>
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium">Nenhum horário livre para este dia. Selecione outra data.</div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Resumo e Botão */}
             <Button 
               type="submit" 
               disabled={salvando || !formData.hora || !formData.servicoObj || !formData.cliente_nome} 
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-lg font-bold shadow-lg mt-4"
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white h-14 text-lg font-bold shadow-lg mt-6 uppercase tracking-wide"
             >
               {salvando ? 'Confirmando...' : 'Confirmar Agendamento'}
             </Button>
