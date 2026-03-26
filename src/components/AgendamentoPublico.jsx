@@ -109,14 +109,14 @@ const AgendamentoPublico = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-  if (sucesso) {
+if (sucesso) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center py-12 shadow-xl border-t-4 border-t-green-500">
           <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Agendamento Confirmado!</h2>
           <p className="text-gray-600 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia {formData.data.split('-').reverse().join('/')} às {formData.hora}.</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="w-full max-w-xs border-amber-600 text-amber-600 hover:bg-amber-50">
+          <Button onClick={() => window.location.reload()} variant="outline" className="w-full max-w-xs mx-auto border-amber-600 text-amber-600 hover:bg-amber-50">
             Fazer outro agendamento
           </Button>
         </Card>
