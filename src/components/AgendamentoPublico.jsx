@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle, Calendar, Scissors, User, DollarSign } from 'lucide-react';
 import logo from '../assets/logo.png'; 
 
-// LISTA OFICIAL DE SERVIÇOS E PREÇOS
 const SERVICOS_TABELA = [
   { nome: 'Acabamento (Pezinho)', preco: 25.00 },
   { nome: 'Barba Simples', preco: 40.00 },
@@ -109,7 +108,27 @@ const AgendamentoPublico = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-if (sucesso) {
+  // FILTRO INTELIGENTE DE 1 HORA (Novo)
+  let horariosFiltrados = horariosLivres;
+  let isServicoLongo = false;
+
+  if (formData.servicoObj) {
+    const sLower = formData.servicoObj.nome.toLowerCase();
+    isServicoLongo = sLower.includes('corte + barba') || sLower.includes('combo corte') || sLower.includes('luzes');
+    
+    if (isServicoLongo) {
+      horariosFiltrados = horariosLivres.filter(hora => {
+        let [h, m] = hora.split(':').map(Number);
+        m += 30;
+        if (m >= 60) { m -= 60; h += 1; }
+        let proximaHora = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        // Só mantém a hora atual se a próxima também estiver na lista (garantindo 1h livre)
+        return horariosLivres.includes(proximaHora);
+      });
+    }
+  }
+
+  if (sucesso) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center py-12 shadow-xl border-t-4 border-t-green-500">
@@ -128,7 +147,6 @@ if (sucesso) {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 py-8">
       <Card className="max-w-lg w-full shadow-2xl overflow-hidden border-0">
         
-        {/* NOVO CABEÇALHO BRANCO */}
         <div className="bg-white p-6 pb-8 flex flex-col items-center justify-center border-b-4 border-amber-600 text-center">
           <img src={logo} alt="Beleza Masculina" className="h-20 mb-4 drop-shadow-sm" />
           <h1 className="text-2xl font-black text-gray-900 uppercase tracking-widest leading-tight">
@@ -145,10 +163,10 @@ if (sucesso) {
             <div className="space-y-3">
               <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4 text-amber-600"/> 1. Escolha o Profissional</Label>
               <div className="grid grid-cols-2 gap-3">
-                <Button type="button" variant={formData.barbeiro === 'Lucas' ? 'default' : 'outline'} className={formData.barbeiro === 'Lucas' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Lucas'})}>
+                <Button type="button" variant={formData.barbeiro === 'Lucas' ? 'default' : 'outline'} className={formData.barbeiro === 'Lucas' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Lucas', servicoObj: null})}>
                   Lucas
                 </Button>
-                <Button type="button" variant={formData.barbeiro === 'Yuri' ? 'default' : 'outline'} className={formData.barbeiro === 'Yuri' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Yuri'})}>
+                <Button type="button" variant={formData.barbeiro === 'Yuri' ? 'default' : 'outline'} className={formData.barbeiro === 'Yuri' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Yuri', servicoObj: null})}>
                   Yuri
                 </Button>
               </div>
@@ -163,10 +181,9 @@ if (sucesso) {
             <div className="space-y-4 pt-4 border-t border-gray-100">
               <Label className="text-gray-500 font-bold flex items-center gap-2"><Scissors className="h-4 w-4 text-amber-600"/> 3. Serviço</Label>
               
-              {/* SELECT CORRIGIDO */}
               <Select required onValueChange={(nomeServico) => {
                 const servicoEncontrado = SERVICOS_TABELA.find(s => s.nome === nomeServico);
-                setFormData({...formData, servicoObj: servicoEncontrado});
+                setFormData({...formData, servicoObj: servicoEncontrado, hora: ''}); // Reseta hora ao trocar serviço
               }}>
                 <SelectTrigger className="bg-gray-50 border-gray-200">
                   <SelectValue placeholder="Selecione o Serviço" />
@@ -180,7 +197,6 @@ if (sucesso) {
                 </SelectContent>
               </Select>
 
-              {/* NOVO CAMPO DE PREÇO FIXO E PAGAMENTO */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-xs text-gray-500 font-bold">Valor (R$)</Label>
@@ -215,12 +231,15 @@ if (sucesso) {
               
               {formData.data && (
                 <div className="pt-2">
-                  <Label className="text-xs text-gray-500 mb-2 block font-bold">Horários Disponíveis:</Label>
+                  <Label className="text-xs text-gray-500 mb-2 block font-bold">
+                    Horários Disponíveis {isServicoLongo && "(Mínimo 1 hora)"}:
+                  </Label>
+                  
                   {loadingHorarios ? (
                     <div className="text-sm text-amber-600 animate-pulse font-medium">Buscando agenda livre...</div>
-                  ) : horariosLivres.length > 0 ? (
+                  ) : horariosFiltrados.length > 0 ? (
                     <div className="grid grid-cols-4 gap-2">
-                      {horariosLivres.map(h => (
+                      {horariosFiltrados.map(h => (
                         <button
                           key={h} type="button"
                           onClick={() => setFormData({...formData, hora: h})}
@@ -230,8 +249,14 @@ if (sucesso) {
                         </button>
                       ))}
                     </div>
+                  ) : horariosLivres.length > 0 ? (
+                    <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100 font-medium">
+                      Não há blocos de 1 hora inteira disponíveis para este serviço hoje. Tente outra data.
+                    </div>
                   ) : (
-                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium">Nenhum horário livre para este dia. Selecione outra data.</div>
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium">
+                      Nenhum horário livre para este dia. Selecione outra data.
+                    </div>
                   )}
                 </div>
               )}
