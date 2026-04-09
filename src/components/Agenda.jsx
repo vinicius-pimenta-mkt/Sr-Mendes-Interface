@@ -45,9 +45,9 @@ import { ptBR } from 'date-fns/locale';
 const Agenda = ({ user }) => {
   const isYuri = user?.role === 'yuri';
   const [agendamentos, setAgendamentos] = useState([]);
-  const [clientes, setClientes] = useState([]); // Guarda todos os clientes do banco
-  const [filteredClientes, setFilteredClientes] = useState([]); // Guarda clientes filtrados pela busca
-  const [showSuggestions, setShowSuggestions] = useState(false); // Controla se a listinha aparece
+  const [clientes, setClientes] = useState([]); 
+  const [filteredClientes, setFilteredClientes] = useState([]); 
+  const [showSuggestions, setShowSuggestions] = useState(false); 
   
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -107,16 +107,14 @@ const Agenda = ({ user }) => {
 
   useEffect(() => {
     fetchAgendamentos();
-    fetchClientes(); // Puxa a lista de clientes ao abrir a tela
+    fetchClientes(); 
   }, []);
 
-  // --- Função para buscar a lista de clientes no banco ---
   const fetchClientes = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      // CORREÇÃO: Buscando na tabela oficial de clientes em vez de assinantes
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/clientes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -155,13 +153,11 @@ const Agenda = ({ user }) => {
     }
   };
 
-  // --- Super Buscador de Clientes ---
   const handleNameChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, cliente_nome: value });
     
     if (value.length > 0) {
-      // Função mágica que arranca acentos e espaços (ex: "João " vira "joao")
       const limparTexto = (str) => {
         return str 
           ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() 
@@ -170,12 +166,10 @@ const Agenda = ({ user }) => {
 
       const termoBusca = limparTexto(value);
 
-      // Filtra clientes pelo nome "limpo" OU pelo telefone
       const filtered = clientes.filter(c => {
         const nomeClienteLimpo = limparTexto(c.nome);
         const matchNome = nomeClienteLimpo.includes(termoBusca);
         
-        // Limpa o telefone do banco só pra garantir a busca pelos números
         const telefoneLimpo = c.telefone ? c.telefone.replace(/\D/g, '') : '';
         const termoTelefoneLimpo = value.replace(/\D/g, '');
         
@@ -191,16 +185,14 @@ const Agenda = ({ user }) => {
     }
   };
 
-  // --- FUNÇÃO RECUPERADA: Ao clicar na lista, preenche os campos ---
   const handleSelectClient = (cliente) => {
     setFormData({
       ...formData,
       cliente_nome: cliente.nome,
       cliente_telefone: cliente.telefone || ''
     });
-    setShowSuggestions(false); // Fecha a listinha após o clique
+    setShowSuggestions(false); 
   };
-  // --------------------------------------------------
 
   const handleServicoChange = (value) => {
     const precoSugerido = tabelaPrecos[value] || 0;
@@ -345,6 +337,7 @@ const Agenda = ({ user }) => {
     }
   };
 
+  // LÓGICA DE EXCLUSÃO ATUALIZADA (Alertas de Segurança)
   const handleDelete = async (agendamento) => {
     const token = localStorage.getItem('token');
     
@@ -377,8 +370,21 @@ const Agenda = ({ user }) => {
       } else {
         if (!confirm('Confirmar liberação APENAS deste horário específico?')) return;
       }
-    } else {
-      if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
+    } 
+    // Alerta específico para o bloqueio de 1 hora
+    else if (agendamento.observacoes === 'Bloqueio automático de 1 hora') {
+      if (!confirm('Este é o bloqueio automático de um serviço de 1 hora (Continuação). Tem certeza que deseja liberar este espaço?')) return;
+    } 
+    // Alerta de serviço principal longo
+    else {
+      const sLower = agendamento.servico ? agendamento.servico.toLowerCase() : '';
+      const isLongo = sLower.includes('corte + barba') || sLower.includes('combo corte') || sLower.includes('luzes');
+      
+      if (isLongo) {
+        if (!confirm('⚠️ Este é um serviço de 1 HORA.\n\nApós cancelar este registro, não esqueça de deletar manualmente o bloco de "(Continuação)" que está logo abaixo dele na agenda.\n\nDeseja excluir este agendamento principal?')) return;
+      } else {
+        if (!confirm('Tem certeza que deseja cancelar/excluir este registro?')) return;
+      }
     }
 
     const isYuriData = agendamento.barber === 'Yuri';
@@ -411,7 +417,7 @@ const Agenda = ({ user }) => {
       barber: isYuri ? 'Yuri' : 'Lucas'
     });
     setEditingAgendamento(null);
-    setShowSuggestions(false); // Reseta a listinha ao fechar
+    setShowSuggestions(false); 
   };
 
   const openEditDialog = (agendamento) => {
@@ -676,7 +682,6 @@ const Agenda = ({ user }) => {
                   </div>
                   )}
                   
-                  {/* --- INÍCIO DA MÁGICA: CAMPO INTELIGENTE --- */}
                   <div className="space-y-2 col-span-2 relative">
                     <Label>Nome do Cliente</Label>
                     <Input 
@@ -688,7 +693,6 @@ const Agenda = ({ user }) => {
                       placeholder="Nome completo ou digite para buscar..."
                     />
                     
-                    {/* Lista suspensa de clientes */}
                     {showSuggestions && filteredClientes.length > 0 && (
                       <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto mt-1">
                         {filteredClientes.map((c, idx) => (
@@ -707,7 +711,6 @@ const Agenda = ({ user }) => {
                       </ul>
                     )}
                   </div>
-                  {/* --- FIM DA MÁGICA --- */}
 
                   <div className="space-y-2 col-span-2">
                     <Label>Telefone do Cliente</Label>
