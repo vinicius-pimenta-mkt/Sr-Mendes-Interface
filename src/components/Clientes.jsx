@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 
 const Clientes = ({ user }) => {
-  // INJEÇÃO DA MANUS: Verifica se é o Yuri
   const isYuri = user?.role === 'yuri';
   
   const [clientes, setClientes] = useState([]);
@@ -144,7 +143,8 @@ const Clientes = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* CABEÇALHO RESPONSIVO */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
           <p className="text-gray-600">Gerencie os clientes da barbearia</p>
@@ -152,7 +152,7 @@ const Clientes = ({ user }) => {
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm} className="bg-amber-600 hover:bg-amber-700">
+            <Button onClick={resetForm} className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700">
               <Plus className="h-4 w-4 mr-2" />
               Novo Cliente
             </Button>
@@ -195,7 +195,7 @@ const Clientes = ({ user }) => {
                 />
               </div>
               
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
                 </Button>
@@ -208,7 +208,6 @@ const Clientes = ({ user }) => {
         </Dialog>
       </div>
 
-      {/* Barra de Pesquisa */}
       <Card>
         <CardContent className="pt-6">
           <div className="relative">
@@ -225,65 +224,69 @@ const Clientes = ({ user }) => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Users className="h-5 w-5 text-amber-600" />
             Lista de Clientes ({filteredClientes.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           {filteredClientes.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
               {searchTerm ? 'Nenhum cliente encontrado para a pesquisa' : 'Nenhum cliente cadastrado'}
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {filteredClientes.map((cliente) => (
-                <div key={cliente.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold">
+                <div key={cliente.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center shrink-0">
+                      <span className="text-purple-600 font-semibold text-sm sm:text-base">
                         {cliente.nome?.charAt(0) || 'C'}
                       </span>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{cliente.nome}</h3>
-                      <div className="flex items-center space-x-4 mt-1">
+                    
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-gray-900 truncate text-sm sm:text-base">{cliente.nome}</h3>
+                      
+                      {/* INFOS DE CONTATO RESPONSIVAS */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1">
                         {cliente.telefone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="h-4 w-4 mr-1" />
-                            {cliente.telefone}
+                          <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                            <Phone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 shrink-0 text-amber-600" />
+                            <span className="whitespace-nowrap">{cliente.telefone}</span>
                           </div>
                         )}
                         {cliente.email && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Mail className="h-4 w-4 mr-1" />
-                            {cliente.email}
+                          <div className="flex items-center text-xs sm:text-sm text-gray-600 break-all">
+                            <Mail className="h-3 w-3 sm:h-4 sm:w-4 mr-1 shrink-0 text-amber-600" />
+                            <span className="leading-tight">{cliente.email}</span>
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+
+                      <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-1.5">
                         Cadastrado em {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                   </div>
                   
-                  {/* INJEÇÃO DA MANUS: Esconde os botões de edição/exclusão se for o Yuri */}
                   {!isYuri && (
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 ml-2">
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7 w-7 sm:h-9 sm:w-auto px-0 sm:px-3"
                       onClick={() => openEditDialog(cliente)}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7 w-7 sm:h-9 sm:w-auto px-0 sm:px-3 text-red-600 hover:text-red-700"
                       onClick={() => handleDelete(cliente.id)}
-                      className="text-red-600 hover:text-red-700"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                   )}
