@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,7 +91,8 @@ const Produtos = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* CABEÇALHO RESPONSIVO */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Estoque e Produtos</h1>
           <p className="text-gray-600">Controle vendas e compras de produtos da barbearia</p>
@@ -99,7 +100,7 @@ const Produtos = () => {
         
         <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if(!v) { setProdutoEdit(null); setFormData({nome:'', preco:'', estoque:''}); }}}>
           <DialogTrigger asChild>
-            <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+            <Button className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white shadow-md">
               <Plus className="h-4 w-4 mr-2" /> Novo Produto
             </Button>
           </DialogTrigger>
@@ -131,45 +132,72 @@ const Produtos = () => {
         </Dialog>
       </div>
 
-      <Card>
+      <Card className="shadow-sm overflow-hidden border-0 sm:border">
         <CardContent className="p-0">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-500 uppercase">
-              <tr>
-                <th className="px-4 py-3">Produto</th>
-                <th className="px-4 py-3">Preço</th>
-                <th className="px-4 py-3 text-center">Em Estoque</th>
-                <th className="px-4 py-3 text-center">Movimentação</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {produtos.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-bold text-gray-900">{p.nome}</td>
-                  <td className="px-4 py-3 text-amber-600 font-semibold">R$ {(p.preco / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant={p.estoque > 5 ? 'outline' : 'destructive'} className="text-sm">
-                      {p.estoque} unid.
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-center space-x-2">
-                    <Button size="sm" onClick={() => openMovDialog(p, 'venda')} className="bg-green-600 hover:bg-green-700 text-white">
-                      <ShoppingCart className="h-4 w-4 mr-1" /> Vender
-                    </Button>
-                    <Button size="sm" onClick={() => openMovDialog(p, 'compra')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                      <PackagePlus className="h-4 w-4 mr-1" /> Comprar
-                    </Button>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => { setProdutoEdit(p); setFormData({ nome: p.nome, preco: (p.preco/100).toString().replace('.',',')}); setDialogOpen(true); }}><Edit className="h-4 w-4 text-gray-500" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50/50 text-gray-500 uppercase text-[10px] sm:text-xs">
+                <tr>
+                  <th className="px-2 sm:px-4 py-3">Prod.</th>
+                  <th className="px-2 sm:px-4 py-3 text-center">Est.</th>
+                  <th className="px-2 sm:px-4 py-3">Preço</th>
+                  <th className="px-1 sm:px-4 py-3 text-right">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {produtos.length === 0 && <div className="p-8 text-center text-gray-400">Nenhum produto cadastrado.</div>}
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {produtos.map(p => (
+                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-2 sm:px-4 py-4 font-bold text-gray-900 truncate max-w-[80px] sm:max-w-none">
+                      {p.nome}
+                    </td>
+                    <td className="px-2 sm:px-4 py-4 text-center">
+                      <Badge variant={p.estoque > 5 ? 'outline' : 'destructive'} className="text-[9px] sm:text-sm px-1 sm:px-2">
+                        {p.estoque} <span className="hidden sm:inline"> unid.</span>
+                      </Badge>
+                    </td>
+                    <td className="px-2 sm:px-4 py-4 text-amber-600 font-semibold text-[11px] sm:text-sm">
+                      R$ {(p.preco / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                    </td>
+                    <td className="px-1 sm:px-4 py-4 text-right">
+                      {/* BOTÕES DE AÇÕES UNIFICADOS E RESPONSIVOS */}
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-1 sm:gap-2">
+                        
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="outline" 
+                            className="h-7 px-1.5 sm:h-9 sm:px-3 text-[10px] sm:text-xs border-green-200 text-green-700 hover:bg-green-50"
+                            onClick={() => openMovDialog(p, 'venda')}
+                          >
+                            <ShoppingCart className="h-3 w-3 sm:mr-1" /> 
+                            <span className="hidden sm:inline">Vender</span>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            className="h-7 px-1.5 sm:h-9 sm:px-3 text-[10px] sm:text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={() => openMovDialog(p, 'compra')}
+                          >
+                            <PackagePlus className="h-3 w-3 sm:mr-1" /> 
+                            <span className="hidden sm:inline">Comprar</span>
+                          </Button>
+                        </div>
+
+                        <div className="flex items-center gap-0 sm:gap-1 mt-1 sm:mt-0">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600" onClick={() => { setProdutoEdit(p); setFormData({ nome: p.nome, preco: (p.preco/100).toString().replace('.',',')}); setDialogOpen(true); }}>
+                            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-red-600" onClick={() => handleDelete(p.id)}>
+                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </Button>
+                        </div>
+                        
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {produtos.length === 0 && <div className="p-8 text-center text-gray-400">Nenhum produto cadastrado.</div>}
+          </div>
         </CardContent>
       </Card>
 
