@@ -565,43 +565,62 @@ const Agenda = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {/* CABEÇALHO DA AGENDA */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Agenda de Atendimentos</h1>
           <p className="text-gray-600">Gerencie os horários da barbearia</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50">
-                <CalendarDays className="h-4 w-4 mr-2 text-amber-600" />
-                {selectedDate ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR }) : "Filtrar Data"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                    setCalendarOpen(false);
-                  }
-                }}
-                disabled={(date) => date.getDay() === 0 || date.getDay() === 1}
-                locale={ptBR}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+        {/* ENVOLVEDOR DOS BOTÕES RESPONSIVOS */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+          
+          {/* 1. Filtro de Data (Fica em cima no mobile) */}
+          <div className="w-full sm:w-auto">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto bg-white border-gray-200 text-gray-700 hover:bg-gray-50 flex justify-center">
+                  <CalendarDays className="h-4 w-4 mr-2 text-amber-600" />
+                  {selectedDate ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR }) : "Filtrar Data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    if (date) { setSelectedDate(date); setCalendarOpen(false); }
+                  }}
+                  disabled={(date) => date.getDay() === 0 || date.getDay() === 1}
+                  locale={ptBR}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
-          <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="secondary" className="bg-gray-800 hover:bg-gray-900 text-white">
-                <Lock className="h-4 w-4 mr-2" /> Bloquear Horários
-              </Button>
-            </DialogTrigger>
+          {/* 2. Botões lado a lado no Mobile */}
+          <div className="flex w-full sm:w-auto gap-2 mt-1 sm:mt-0">
+            
+            {/* Botão Novo Agendamento (Esquerda) */}
+            <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if(!open) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white px-2 sm:px-4">
+                  <Plus className="h-4 w-4 sm:mr-2" /> 
+                  <span className="text-xs sm:text-sm">Novo<span className="hidden sm:inline"> Agendamento</span></span>
+                </Button>
+              </DialogTrigger>
+              {/* ... resto do DialogContent do Novo Agendamento ... */}
+            </Dialog>
+
+            {/* Botão Bloquear Horários (Direita) */}
+            <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="flex-1 sm:flex-none bg-gray-800 hover:bg-gray-900 text-white px-2 sm:px-4">
+                  <Lock className="h-4 w-4 sm:mr-2" /> 
+                  <span className="text-xs sm:text-sm">Bloquear<span className="hidden sm:inline"> Horários</span></span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>Bloquear Horários na Agenda</DialogTitle>
