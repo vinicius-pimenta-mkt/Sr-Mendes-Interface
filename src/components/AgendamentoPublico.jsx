@@ -61,10 +61,14 @@ const AgendamentoPublico = () => {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/${endpoint}/disponibilidade?data=${formData.data}`);
       if (response.ok) {
         const data = await response.json();
-        setHorariosLivres(data.livres || []);
+        // VACINA 1: Garante que será um Array válido para não quebrar o filtro do Chrome
+        setHorariosLivres(Array.isArray(data?.livres) ? data.livres : []);
+      } else {
+        setHorariosLivres([]);
       }
     } catch (error) {
       console.error('Erro ao buscar horários:', error);
+      setHorariosLivres([]);
     } finally {
       setLoadingHorarios(false);
     }
@@ -108,16 +112,16 @@ const AgendamentoPublico = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-  // FILTRO INTELIGENTE DE 1 HORA (Novo)
-  let horariosFiltrados = horariosLivres;
+  // FILTRO INTELIGENTE DE 1 HORA (Vacinado contra falhas de Array)
+  let horariosFiltrados = Array.isArray(horariosLivres) ? horariosLivres : [];
   let isServicoLongo = false;
 
-  if (formData.servicoObj) {
+  if (formData.servicoObj && horariosFiltrados.length > 0) {
     const sLower = formData.servicoObj.nome.toLowerCase();
     isServicoLongo = sLower.includes('corte + barba') || sLower.includes('combo corte') || sLower.includes('luzes');
     
     if (isServicoLongo) {
-      horariosFiltrados = horariosLivres.filter(hora => {
+      horariosFiltrados = horariosFiltrados.filter(hora => {
         let [h, m] = hora.split(':').map(Number);
         m += 30;
         if (m >= 60) { m -= 60; h += 1; }
@@ -134,7 +138,8 @@ const AgendamentoPublico = () => {
         <Card className="max-w-md w-full text-center py-12 shadow-xl border-t-4 border-t-green-500">
           <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Agendamento Confirmado!</h2>
-          <p className="text-gray-600 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia {formData.data.split('-').reverse().join('/')} às {formData.hora}.</p>
+          {/* VACINA 2: Protege o split da data caso ela suma do estado por algum motivo */}
+          <p className="text-gray-600 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia {formData.data ? formData.data.split('-').reverse().join('/') : ''} às {formData.hora}.</p>
           <Button onClick={() => window.location.reload()} variant="outline" className="w-full max-w-xs mx-auto border-amber-600 text-amber-600 hover:bg-amber-50">
             Fazer outro agendamento
           </Button>
@@ -204,7 +209,8 @@ const AgendamentoPublico = () => {
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input 
                       readOnly 
-                      value={formData.servicoObj ? formData.servicoObj.preco.toFixed(2).replace('.', ',') : '0,00'} 
+                      // VACINA 3: Força a conversão para Número ANTES de usar o .toFixed(2)
+                      value={formData.servicoObj ? Number(formData.servicoObj.preco || 0).toFixed(2).replace('.', ',') : '0,00'} 
                       className="bg-gray-100/50 text-gray-700 font-black pl-9 border-gray-200 cursor-not-allowed" 
                     />
                   </div>
