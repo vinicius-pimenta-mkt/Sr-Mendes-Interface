@@ -55,7 +55,8 @@ const AgendamentoPublico = () => {
 
   const buscarHorarios = async () => {
     setLoadingHorarios(true);
-    setFormData(prev => ({ ...prev, { hora: '' } })); 
+    // CORRIGIDO AQUI: removida as chaves extras
+    setFormData(prev => ({ ...prev, hora: '' })); 
     try {
       const endpoint = formData.barbeiro === 'Yuri' ? 'agendamentos-yuri' : 'agendamentos';
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/${endpoint}/disponibilidade?data=${formData.data}`);
@@ -147,7 +148,6 @@ const AgendamentoPublico = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-neutral-950 overflow-x-hidden">
-      {/* IMAGEM DE FUNDO ADICIONADA DINAMICAMENTE */}
       <img src="/fundologin.png" alt="Fundo" className="fixed inset-0 w-full h-full object-cover z-0 opacity-40" />
       <div className="fixed inset-0 bg-neutral-950/40 backdrop-blur-[3px] z-10" />
       
