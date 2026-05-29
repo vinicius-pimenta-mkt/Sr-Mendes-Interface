@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, Calendar, Scissors, User, DollarSign } from 'lucide-react';
-import logo from '../assets/logo.png'; 
+import { CheckCircle, Calendar, Scissors, User, DollarSign, CalendarDays } from 'lucide-react';
+// IMPORTAÇÃO DA NOVA LOGO BRANCA
+import logobranca from '../assets/logobranca.png'; 
 
 const SERVICOS_TABELA = [
   { nome: 'Acabamento (Pezinho)', preco: 25.00 },
@@ -134,13 +135,13 @@ const AgendamentoPublico = () => {
 
   if (sucesso) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center py-12 shadow-xl border-t-4 border-t-green-500">
+      <div className="min-h-screen flex items-center justify-center relative p-4 bg-neutral-950">
+        <Card className="max-w-md w-full text-center py-12 shadow-2xl z-10 bg-neutral-900/90 border-neutral-800 backdrop-blur-md">
           <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Agendamento Confirmado!</h2>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Agendamento Confirmado!</h2>
           {/* VACINA 2: Protege o split da data caso ela suma do estado por algum motivo */}
-          <p className="text-gray-600 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia {formData.data ? formData.data.split('-').reverse().join('/') : ''} às {formData.hora}.</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="w-full max-w-xs mx-auto border-amber-600 text-amber-600 hover:bg-amber-50">
+          <p className="text-neutral-400 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia <strong className="text-white">{formData.data ? formData.data.split('-').reverse().join('/') : ''}</strong> às <strong className="text-white">{formData.hora}</strong>.</p>
+          <Button onClick={() => window.location.reload()} className="w-full max-w-xs mx-auto bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold">
             Fazer outro agendamento
           </Button>
         </Card>
@@ -149,135 +150,145 @@ const AgendamentoPublico = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 py-8">
-      <Card className="max-w-lg w-full shadow-2xl overflow-hidden border-0">
-        
-        <div className="bg-white p-6 pb-8 flex flex-col items-center justify-center border-b-4 border-amber-600 text-center">
-          <img src={logo} alt="Beleza Masculina" className="h-20 mb-4 drop-shadow-sm" />
-          <h1 className="text-2xl font-black text-gray-900 uppercase tracking-widest leading-tight">
-            Barbearia Beleza<br/>Masculina
-          </h1>
-          <p className="text-gray-500 font-medium mt-2 tracking-wide">
-            Agende seu horário
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col relative bg-neutral-950 overflow-x-hidden">
+      
+      <main className="flex-1 flex flex-col items-center justify-center p-4 py-8 z-20 relative">
+        <Card className="max-w-lg w-full shadow-2xl bg-neutral-900/90 border-neutral-800 backdrop-blur-md rounded-xl">
+          
+          <div className="p-6 text-center border-b border-neutral-800">
+            {/* LOGO NOVA BRANCA APLICADA AQUI */}
+            <img src={logobranca} alt="Beleza Masculina" className="w-32 h-auto mx-auto mb-4 drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]" />
+            <h1 className="text-2xl font-black text-white uppercase tracking-tighter leading-tight flex items-center justify-center gap-2">
+              <CalendarDays className="h-6 w-6 text-[#DEAE60]" /> Agende seu Horário
+            </h1>
+            <p className="text-neutral-400 font-medium mt-1 text-sm">Siga os passos abaixo</p>
+          </div>
 
-        <CardContent className="p-6 bg-white">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            <div className="space-y-3">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4 text-amber-600"/> 1. Escolha o Profissional</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Button type="button" variant={formData.barbeiro === 'Lucas' ? 'default' : 'outline'} className={formData.barbeiro === 'Lucas' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Lucas', servicoObj: null})}>
-                  Lucas
-                </Button>
-                <Button type="button" variant={formData.barbeiro === 'Yuri' ? 'default' : 'outline'} className={formData.barbeiro === 'Yuri' ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold' : 'font-bold text-gray-600'} onClick={() => setFormData({...formData, barbeiro: 'Yuri', servicoObj: null})}>
-                  Yuri
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-4 border-t border-gray-100">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><User className="h-4 w-4 text-amber-600"/> 2. Seus Dados</Label>
-              <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-gray-50 border-gray-200" />
-              <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-gray-50 border-gray-200" />
-            </div>
-
-            <div className="space-y-4 pt-4 border-t border-gray-100">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><Scissors className="h-4 w-4 text-amber-600"/> 3. Serviço</Label>
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               
-              <Select required onValueChange={(nomeServico) => {
-                const servicoEncontrado = SERVICOS_TABELA.find(s => s.nome === nomeServico);
-                setFormData({...formData, servicoObj: servicoEncontrado, hora: ''}); // Reseta hora ao trocar serviço
-              }}>
-                <SelectTrigger className="bg-gray-50 border-gray-200">
-                  <SelectValue placeholder="Selecione o Serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SERVICOS_TABELA.map((s) => (
-                    <SelectItem key={s.nome} value={s.nome}>
-                      {s.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-3">
+                <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                  <User className="h-4 w-4 text-[#DEAE60]"/> 1. Escolha o Profissional
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button type="button" variant="outline" className={formData.barbeiro === 'Lucas' ? 'bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold border-0' : 'bg-neutral-950 border-neutral-800 text-neutral-400 font-bold'} onClick={() => setFormData({...formData, barbeiro: 'Lucas', servicoObj: null})}>
+                    Lucas
+                  </Button>
+                  <Button type="button" variant="outline" className={formData.barbeiro === 'Yuri' ? 'bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold border-0' : 'bg-neutral-950 border-neutral-800 text-neutral-400 font-bold'} onClick={() => setFormData({...formData, barbeiro: 'Yuri', servicoObj: null})}>
+                    Yuri
+                  </Button>
+                </div>
+              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500 font-bold">Valor (R$)</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input 
-                      readOnly 
-                      // VACINA 3: Força a conversão para Número ANTES de usar o .toFixed(2)
-                      value={formData.servicoObj ? Number(formData.servicoObj.preco || 0).toFixed(2).replace('.', ',') : '0,00'} 
-                      className="bg-gray-100/50 text-gray-700 font-black pl-9 border-gray-200 cursor-not-allowed" 
-                    />
+              <div className="space-y-4 pt-4 border-t border-neutral-800">
+                <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                  <User className="h-4 w-4 text-[#DEAE60]"/> 2. Seus Dados
+                </Label>
+                <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
+                <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-neutral-800">
+                <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                  <Scissors className="h-4 w-4 text-[#DEAE60]"/> 3. Serviço
+                </Label>
+                
+                <Select required onValueChange={(nomeServico) => {
+                  const servicoEncontrado = SERVICOS_TABELA.find(s => s.nome === nomeServico);
+                  setFormData({...formData, servicoObj: servicoEncontrado, hora: ''}); // Reseta hora ao trocar serviço
+                }}>
+                  <SelectTrigger className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]">
+                    <SelectValue placeholder="Selecione o Serviço" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                    {SERVICOS_TABELA.map((s) => (
+                      <SelectItem key={s.nome} value={s.nome}>
+                        {s.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest ml-1">Valor (R$)</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                      <Input 
+                        readOnly 
+                        // VACINA 3: Força a conversão para Número ANTES de usar o .toFixed(2)
+                        value={formData.servicoObj ? Number(formData.servicoObj.preco || 0).toFixed(2).replace('.', ',') : '0,00'} 
+                        className="bg-neutral-950/50 text-white font-black pl-9 border-neutral-800 cursor-not-allowed h-12 focus-visible:ring-[#DEAE60]" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest ml-1">Pagamento</Label>
+                    <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
+                      <SelectTrigger className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]"><SelectValue placeholder="Forma" /></SelectTrigger>
+                      <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        <SelectItem value="Pix">Pix</SelectItem>
+                        <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
+                        <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500 font-bold">Pagamento</Label>
-                  <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
-                    <SelectTrigger className="bg-gray-50 border-gray-200"><SelectValue placeholder="Forma" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                      <SelectItem value="Pix">Pix</SelectItem>
-                      <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
-                      <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
-            </div>
 
-            <div className="space-y-4 pt-4 border-t border-gray-100">
-              <Label className="text-gray-500 font-bold flex items-center gap-2"><Calendar className="h-4 w-4 text-amber-600"/> 4. Data e Hora</Label>
-              <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-gray-50 border-gray-200" />
-              
-              {formData.data && (
-                <div className="pt-2">
-                  <Label className="text-xs text-gray-500 mb-2 block font-bold">
-                    Horários Disponíveis {isServicoLongo && "(Mínimo 1 hora)"}:
-                  </Label>
-                  
-                  {loadingHorarios ? (
-                    <div className="text-sm text-amber-600 animate-pulse font-medium">Buscando agenda livre...</div>
-                  ) : horariosFiltrados.length > 0 ? (
-                    <div className="grid grid-cols-4 gap-2">
-                      {horariosFiltrados.map(h => (
-                        <button
-                          key={h} type="button"
-                          onClick={() => setFormData({...formData, hora: h})}
-                          className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-amber-600 text-white border-amber-600 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-600'}`}
-                        >
-                          {h}
-                        </button>
-                      ))}
-                    </div>
-                  ) : horariosLivres.length > 0 ? (
-                    <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100 font-medium">
-                      Não há blocos de 1 hora inteira disponíveis para este serviço hoje. Tente outra data.
-                    </div>
-                  ) : (
-                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium">
-                      Nenhum horário livre para este dia. Selecione outra data.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              <div className="space-y-4 pt-4 border-t border-neutral-800">
+                <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-[#DEAE60]"/> 4. Data e Hora
+                </Label>
+                <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-neutral-950 border-neutral-800 text-white h-12 px-4 focus-visible:ring-[#DEAE60]" style={{ colorScheme: 'dark' }} />
+                
+                {formData.data && (
+                  <div className="pt-2 animate-in fade-in duration-300">
+                    <Label className="text-[10px] text-neutral-500 mb-2 block font-bold uppercase tracking-widest ml-1">
+                      Horários Disponíveis {isServicoLongo && "(Mínimo 1 hora)"}:
+                    </Label>
+                    
+                    {loadingHorarios ? (
+                      <div className="text-xs text-[#DEAE60] animate-pulse font-medium bg-neutral-950 p-3 rounded-lg text-center border border-neutral-800">Buscando agenda livre...</div>
+                    ) : horariosFiltrados.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-2">
+                        {horariosFiltrados.map(h => (
+                          <button
+                            key={h} type="button"
+                            onClick={() => setFormData({...formData, hora: h})}
+                            className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-[#DEAE60] text-neutral-950 border-[#DEAE60] shadow-md scale-[1.02]' : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-[#DEAE60]'}`}
+                          >
+                            {h}
+                          </button>
+                        ))}
+                      </div>
+                    ) : horariosLivres.length > 0 ? (
+                      <div className="text-xs text-[#DEAE60] bg-neutral-950 p-3 rounded-lg border border-neutral-800 text-center font-medium">
+                        Não há blocos de 1 hora inteira disponíveis para este serviço hoje. Tente outra data.
+                      </div>
+                    ) : (
+                      <div className="text-xs text-red-400 bg-red-950/30 p-3 rounded-lg border border-red-900/30 text-center font-bold">
+                        Nenhum horário livre para este dia. Selecione outra data.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            <Button 
-              type="submit" 
-              disabled={salvando || !formData.hora || !formData.servicoObj || !formData.cliente_nome} 
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white h-14 text-lg font-bold shadow-lg mt-6 uppercase tracking-wide"
-            >
-              {salvando ? 'Confirmando...' : 'Confirmar Agendamento'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button 
+                type="submit" 
+                disabled={salvando || !formData.hora || !formData.servicoObj || !formData.cliente_nome} 
+                className="w-full bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 h-14 text-lg font-black shadow-xl shadow-black/30 mt-6 uppercase tracking-tighter"
+              >
+                {salvando ? 'Confirmando...' : 'Confirmar Agendamento'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 };
