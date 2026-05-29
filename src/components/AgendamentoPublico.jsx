@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle, Calendar, Scissors, User, DollarSign, CalendarDays } from 'lucide-react';
-// IMPORTAÇÃO DA NOVA LOGO BRANCA
 import logobranca from '../assets/logobranca.png'; 
 
 const SERVICOS_TABELA = [
@@ -56,13 +55,12 @@ const AgendamentoPublico = () => {
 
   const buscarHorarios = async () => {
     setLoadingHorarios(true);
-    setFormData(prev => ({ ...prev, hora: '' })); 
+    setFormData(prev => ({ ...prev, { hora: '' } })); 
     try {
       const endpoint = formData.barbeiro === 'Yuri' ? 'agendamentos-yuri' : 'agendamentos';
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/${endpoint}/disponibilidade?data=${formData.data}`);
       if (response.ok) {
         const data = await response.json();
-        // VACINA 1: Garante que será um Array válido para não quebrar o filtro do Chrome
         setHorariosLivres(Array.isArray(data?.livres) ? data.livres : []);
       } else {
         setHorariosLivres([]);
@@ -113,7 +111,6 @@ const AgendamentoPublico = () => {
 
   const hojeStr = new Date().toISOString().split('T')[0];
 
-  // FILTRO INTELIGENTE DE 1 HORA (Vacinado contra falhas de Array)
   let horariosFiltrados = Array.isArray(horariosLivres) ? horariosLivres : [];
   let isServicoLongo = false;
 
@@ -127,7 +124,6 @@ const AgendamentoPublico = () => {
         m += 30;
         if (m >= 60) { m -= 60; h += 1; }
         let proximaHora = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        // Só mantém a hora atual se a próxima também estiver na lista (garantindo 1h livre)
         return horariosLivres.includes(proximaHora);
       });
     }
@@ -136,10 +132,10 @@ const AgendamentoPublico = () => {
   if (sucesso) {
     return (
       <div className="min-h-screen flex items-center justify-center relative p-4 bg-neutral-950">
-        <Card className="max-w-md w-full text-center py-12 shadow-2xl z-10 bg-neutral-900/90 border-neutral-800 backdrop-blur-md">
+        <img src="/fundologin.png" className="absolute inset-0 w-full h-full object-cover z-0 opacity-40" alt="Fundo" />
+        <Card className="max-w-md w-full text-center py-12 shadow-2xl z-10 bg-neutral-900/90 border-[0.5px] border-neutral-800 backdrop-blur-md">
           <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Agendamento Confirmado!</h2>
-          {/* VACINA 2: Protege o split da data caso ela suma do estado por algum motivo */}
           <p className="text-neutral-400 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia <strong className="text-white">{formData.data ? formData.data.split('-').reverse().join('/') : ''}</strong> às <strong className="text-white">{formData.hora}</strong>.</p>
           <Button onClick={() => window.location.reload()} className="w-full max-w-xs mx-auto bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold">
             Fazer outro agendamento
@@ -151,12 +147,14 @@ const AgendamentoPublico = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-neutral-950 overflow-x-hidden">
+      {/* IMAGEM DE FUNDO ADICIONADA DINAMICAMENTE */}
+      <img src="/fundologin.png" alt="Fundo" className="fixed inset-0 w-full h-full object-cover z-0 opacity-40" />
+      <div className="fixed inset-0 bg-neutral-950/40 backdrop-blur-[3px] z-10" />
       
       <main className="flex-1 flex flex-col items-center justify-center p-4 py-8 z-20 relative">
-        <Card className="max-w-lg w-full shadow-2xl bg-neutral-900/90 border-neutral-800 backdrop-blur-md rounded-xl">
+        <Card className="max-w-lg w-full shadow-2xl bg-neutral-900/90 border-[0.5px] border-neutral-800/80 backdrop-blur-md rounded-xl">
           
           <div className="p-6 text-center border-b border-neutral-800">
-            {/* LOGO NOVA BRANCA APLICADA AQUI */}
             <img src={logobranca} alt="Beleza Masculina" className="w-32 h-auto mx-auto mb-4 drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]" />
             <h1 className="text-2xl font-black text-white uppercase tracking-tighter leading-tight flex items-center justify-center gap-2">
               <CalendarDays className="h-6 w-6 text-[#DEAE60]" /> Agende seu Horário
@@ -172,10 +170,10 @@ const AgendamentoPublico = () => {
                   <User className="h-4 w-4 text-[#DEAE60]"/> 1. Escolha o Profissional
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button type="button" variant="outline" className={formData.barbeiro === 'Lucas' ? 'bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold border-0' : 'bg-neutral-950 border-neutral-800 text-neutral-400 font-bold'} onClick={() => setFormData({...formData, barbeiro: 'Lucas', servicoObj: null})}>
+                  <Button type="button" variant="outline" className={formData.barbeiro === 'Lucas' ? 'bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold border-0' : 'bg-neutral-950 border-[0.5px] border-neutral-800 text-neutral-400 font-bold'} onClick={() => setFormData({...formData, barbeiro: 'Lucas', servicoObj: null})}>
                     Lucas
                   </Button>
-                  <Button type="button" variant="outline" className={formData.barbeiro === 'Yuri' ? 'bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold border-0' : 'bg-neutral-950 border-neutral-800 text-neutral-400 font-bold'} onClick={() => setFormData({...formData, barbeiro: 'Yuri', servicoObj: null})}>
+                  <Button type="button" variant="outline" className={formData.barbeiro === 'Yuri' ? 'bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold border-0' : 'bg-neutral-950 border-[0.5px] border-neutral-800 text-neutral-400 font-bold'} onClick={() => setFormData({...formData, barbeiro: 'Yuri', servicoObj: null})}>
                     Yuri
                   </Button>
                 </div>
@@ -185,8 +183,8 @@ const AgendamentoPublico = () => {
                 <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
                   <User className="h-4 w-4 text-[#DEAE60]"/> 2. Seus Dados
                 </Label>
-                <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
-                <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
+                <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
+                <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
               </div>
 
               <div className="space-y-4 pt-4 border-t border-neutral-800">
@@ -196,12 +194,12 @@ const AgendamentoPublico = () => {
                 
                 <Select required onValueChange={(nomeServico) => {
                   const servicoEncontrado = SERVICOS_TABELA.find(s => s.nome === nomeServico);
-                  setFormData({...formData, servicoObj: servicoEncontrado, hora: ''}); // Reseta hora ao trocar serviço
+                  setFormData({...formData, servicoObj: servicoEncontrado, hora: ''});
                 }}>
-                  <SelectTrigger className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]">
+                  <SelectTrigger className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]">
                     <SelectValue placeholder="Selecione o Serviço" />
                   </SelectTrigger>
-                  <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                  <SelectContent className="bg-neutral-900 border-[0.5px] border-neutral-800 text-white">
                     {SERVICOS_TABELA.map((s) => (
                       <SelectItem key={s.nome} value={s.nome}>
                         {s.nome}
@@ -217,9 +215,8 @@ const AgendamentoPublico = () => {
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
                       <Input 
                         readOnly 
-                        // VACINA 3: Força a conversão para Número ANTES de usar o .toFixed(2)
                         value={formData.servicoObj ? Number(formData.servicoObj.preco || 0).toFixed(2).replace('.', ',') : '0,00'} 
-                        className="bg-neutral-950/50 text-white font-black pl-9 border-neutral-800 cursor-not-allowed h-12 focus-visible:ring-[#DEAE60]" 
+                        className="bg-neutral-950/50 text-white font-black pl-9 border-[0.5px] border-neutral-800/60 cursor-not-allowed h-12 focus-visible:ring-[#DEAE60]" 
                       />
                     </div>
                   </div>
@@ -227,8 +224,8 @@ const AgendamentoPublico = () => {
                   <div className="space-y-2">
                     <Label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest ml-1">Pagamento</Label>
                     <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
-                      <SelectTrigger className="bg-neutral-950 border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]"><SelectValue placeholder="Forma" /></SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                      <SelectTrigger className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]"><SelectValue placeholder="Forma" /></SelectTrigger>
+                      <SelectContent className="bg-neutral-900 border-[0.5px] border-neutral-800 text-white">
                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                         <SelectItem value="Pix">Pix</SelectItem>
                         <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
@@ -243,7 +240,7 @@ const AgendamentoPublico = () => {
                 <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-[#DEAE60]"/> 4. Data e Hora
                 </Label>
-                <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-neutral-950 border-neutral-800 text-white h-12 px-4 focus-visible:ring-[#DEAE60]" style={{ colorScheme: 'dark' }} />
+                <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 px-4 focus-visible:ring-[#DEAE60]" style={{ colorScheme: 'dark' }} />
                 
                 {formData.data && (
                   <div className="pt-2 animate-in fade-in duration-300">
@@ -259,7 +256,7 @@ const AgendamentoPublico = () => {
                           <button
                             key={h} type="button"
                             onClick={() => setFormData({...formData, hora: h})}
-                            className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-[#DEAE60] text-neutral-950 border-[#DEAE60] shadow-md scale-[1.02]' : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-[#DEAE60]'}`}
+                            className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-[#DEAE60] text-neutral-950 border-[#DEAE60] shadow-md scale-[1.02]' : 'bg-neutral-950 text-neutral-400 border-[0.5px] border-neutral-800 hover:border-[#DEAE60]'}`}
                           >
                             {h}
                           </button>
@@ -270,7 +267,7 @@ const AgendamentoPublico = () => {
                         Não há blocos de 1 hora inteira disponíveis para este serviço hoje. Tente outra data.
                       </div>
                     ) : (
-                      <div className="text-xs text-red-400 bg-red-950/30 p-3 rounded-lg border border-red-900/30 text-center font-bold">
+                      <div className="text-xs text-red-400 bg-red-950/30 p-3 rounded-lg border border-neutral-800 text-center font-bold">
                         Nenhum horário livre para este dia. Selecione outra data.
                       </div>
                     )}
