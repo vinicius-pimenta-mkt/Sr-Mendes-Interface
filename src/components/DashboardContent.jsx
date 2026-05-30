@@ -11,7 +11,8 @@ import {
   AlertCircle,
   User
 } from 'lucide-react';
-import logo from '../assets/logo.png';
+// APENAS A ALTERAÇÃO DA IMPORTAÇÃO PARA A LOGO BRANCA SOLICITADA
+import logobranca from '../assets/logobranca.png';
 
 const DashboardContent = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -33,7 +34,6 @@ const DashboardContent = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      // MANTÉM SUA ROTA ORIGINAL INTACTA
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/relatorios/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -45,185 +45,147 @@ const DashboardContent = () => {
         setDashboardData(data);
       }
     } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
+      console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatarHorario = (hora) => {
-    return hora.substring(0, 5);
+  const formatarPreco = (valor) => {
+    return (valor / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   const formatarData = (dataStr) => {
-    const [ano, mes, dia] = dataStr.split('-');
-    return `${dia}/${mes}`;
+    if (!dataStr) return '';
+    const partes = dataStr.split('-');
+    return `${partes[2]}/${partes[1]}`;
+  };
+
+  const formatarHorario = (horaStr) => {
+    if (!horaStr) return '';
+    return horaStr.substring(0, 5);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Confirmado': return 'bg-green-100 text-green-800';
-      case 'Pendente':   return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelado':  return 'bg-red-100 text-red-800';
-      case 'Bloqueado':  return 'bg-gray-800 text-white'; // Cor do bloqueado mantida por precaução
-      default:           return 'bg-gray-100 text-gray-800';
+      case 'Confirmado': return 'bg-green-950/50 text-green-400 border-[0.5px] border-green-900/50';
+      case 'Pendente': return 'bg-yellow-950/50 text-yellow-400 border-[0.5px] border-yellow-900/50';
+      case 'Cancelado': return 'bg-red-950/50 text-red-400 border-[0.5px] border-red-900/50';
+      default: return 'bg-neutral-800 text-neutral-400 border-[0.5px] border-neutral-700';
     }
   };
-
-  const hoje = new Date();
-  const hojeStr = hoje.getFullYear() + '-' + 
-                 String(hoje.getMonth() + 1).padStart(2, '0') + '-' + 
-                 String(hoje.getDate()).padStart(2, '0');
-
-  // ÚNICA ALTERAÇÃO NO FRONTEND: Esconde os bloqueados visualmente das tabelas
-  const agendamentosLucas = dashboardData.agendamentos.filter(a => a.barber === 'Lucas' && a.status !== 'Bloqueado');
-  const agendamentosYuri = dashboardData.agendamentos.filter(a => a.barber === 'Yuri' && a.status !== 'Bloqueado');
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#DEAE60]"></div>
       </div>
     );
   }
 
+  const hojeStr = new Date().toISOString().split('T')[0];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <img src={logo} alt="Sr. Mendes Barbearia" className="h-12 w-auto" />
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Gestão em tempo real - {new Date().toLocaleDateString('pt-BR')}</p>
+    <div className="space-y-6 animate-in fade-in duration-500 pt-8 lg:pt-4">
+      
+      {/* CABEÇALHO REESTRUTURADO APENAS COM CORES PREMIUM E LOGOBRANCA */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-neutral-900/60 backdrop-blur-md p-6 rounded-xl border-[0.5px] border-neutral-800/80 shadow-xl gap-4">
+        <div className="flex items-center space-x-4">
+          <img src={logobranca} alt="Logo" className="h-16 w-auto object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]" />
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tighter">Painel de Controle</h1>
+            <p className="text-neutral-400 text-sm font-medium mt-0.5">Visão geral e desempenho do seu negócio</p>
+          </div>
+        </div>
+        <div className="bg-neutral-950/80 border-[0.5px] border-neutral-800 px-4 py-2 rounded-xl text-center sm:text-right w-full sm:w-auto">
+          <p className="text-[10px] font-bold text-[#DEAE60] uppercase tracking-widest">Hora Atual do Sistema</p>
+          <p className="text-2xl font-black text-white tracking-tight mt-0.5">{dashboardData.agoraHora || "00:00"}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-yellow-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Agendamentos</CardTitle>
-            <Users className="h-5 w-5 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{dashboardData.atendimentosHoje}</div>
-            <p className="text-xs text-gray-500 mt-1">marcados para hoje</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Receita do Dia</CardTitle>
-            <DollarSign className="h-5 w-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              R$ {Number(dashboardData.receitaDia || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {/* BLOCOS ESTATÍSTICOS INTEGRADOS AO TEMA ESCURO COM BORDAS FINAS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <Card className="bg-neutral-900/60 border-[0.5px] border-neutral-800 backdrop-blur-md shadow-xl rounded-xl overflow-hidden">
+          <CardContent className="p-4 sm:p-6 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Atendimentos Hoje</p>
+              <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">{dashboardData.atendimentosHoje}</p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">faturamento confirmado hoje</p>
+            <div className="p-2 sm:p-3 bg-neutral-950 rounded-xl border-[0.5px] border-neutral-800 text-[#DEAE60]"><Calendar className="h-5 w-5" /></div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Serviços Realizados</CardTitle>
-            <CheckCircle className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{dashboardData.servicosRealizados}</div>
-            <p className="text-xs text-gray-500 mt-1">horário já passou (hoje)</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pendentes</CardTitle>
-            <Clock className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.pendentesFuturos}
+        <Card className="bg-neutral-900/60 border-[0.5px] border-neutral-800 backdrop-blur-md shadow-xl rounded-xl overflow-hidden">
+          <CardContent className="p-4 sm:p-6 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Receita do Dia</p>
+              <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">{formatarPreco(dashboardData.receitaDia)}</p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">próximos com status pendente</p>
+            <div className="p-2 sm:p-3 bg-neutral-950 rounded-xl border-[0.5px] border-neutral-800 text-green-400"><DollarSign className="h-5 w-5" /></div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-neutral-900/60 border-[0.5px] border-neutral-800 backdrop-blur-md shadow-xl rounded-xl overflow-hidden">
+          <CardContent className="p-4 sm:p-6 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Serviços Feitos</p>
+              <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">{dashboardData.servicosRealizados}</p>
+            </div>
+            <div className="p-2 sm:p-3 bg-neutral-950 rounded-xl border-[0.5px] border-neutral-800 text-[#DEAE60]"><Scissors className="h-5 w-5" /></div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-neutral-900/60 border-[0.5px] border-neutral-800 backdrop-blur-md shadow-xl rounded-xl overflow-hidden">
+          <CardContent className="p-4 sm:p-6 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Agendados (24h)</p>
+              <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">{dashboardData.pendentesFuturos}</p>
+            </div>
+            <div className="p-2 sm:p-3 bg-neutral-950 rounded-xl border-[0.5px] border-neutral-800 text-yellow-400"><Clock className="h-5 w-5" /></div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-sm">
-          <CardHeader className="bg-yellow-50/50 border-b">
-            <CardTitle className="flex items-center gap-2 text-lg text-yellow-800">
-              <User className="h-5 w-5 text-yellow-600" />
-              Próximos: Lucas
+      {/* LISTA DE ATENDIMENTOS REESTRUTURADA INTEGRALMENTE NO ESTILO PRESTIGIADO */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="bg-neutral-900/60 border-[0.5px] border-neutral-800 backdrop-blur-md shadow-xl rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-neutral-800 bg-neutral-950/30 px-6 py-4">
+            <CardTitle className="text-lg text-white font-bold uppercase tracking-tight flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#DEAE60]" />
+              Próximos Atendimentos (Próximas 24 horas)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-gray-100">
-              {agendamentosLucas.length > 0 ? (
-                agendamentosLucas.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+            <div className="divide-y divide-neutral-800">
+              {dashboardData.agendamentos && dashboardData.agendamentos.length > 0 ? (
+                dashboardData.agendamentos.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center font-bold">
+                      <div className="w-10 h-10 bg-neutral-950 text-[#DEAE60] border-[0.5px] border-neutral-800 rounded-full flex items-center justify-center font-black uppercase text-sm">
                         {a.cliente_nome?.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{a.cliente_nome}</p>
-                        <p className="text-sm text-gray-500">{a.servico}</p>
+                        <p className="font-bold text-neutral-100 text-sm sm:text-base">{a.cliente_nome}</p>
+                        <p className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
+                          <Scissors className="h-3 w-3 text-[#DEAE60]" /> {a.servico}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900 text-lg">
-                        {formatarHorario(a.hora)} 
-                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
-                      </p>
-                      <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
-                        {a.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro nas próximas 24h.</div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="bg-green-50/50 border-b">
-            <CardTitle className="flex items-center gap-2 text-lg text-green-800">
-              <User className="h-5 w-5 text-green-600" />
-              Próximos: Yuri
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-gray-100">
-              {agendamentosYuri.length > 0 ? (
-                agendamentosYuri.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold">
-                        {a.cliente_nome?.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{a.cliente_nome}</p>
-                        <p className="text-sm text-gray-500">{a.servico}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900 text-lg">
+                    <div className="text-right space-y-1">
+                      <p className="font-black text-white text-base sm:text-lg tracking-tight">
                         {formatarHorario(a.hora)}
-                        <span className="text-[10px] text-gray-400 ml-1">({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})</span>
+                        <span className="text-[10px] text-neutral-500 font-bold ml-1.5 uppercase tracking-wide">
+                          ({a.data === hojeStr ? 'Hoje' : formatarData(a.data)})
+                        </span>
                       </p>
-                      <Badge className={`${getStatusColor(a.status)} font-normal text-[10px]`}>
+                      <Badge variant="outline" className={`${getStatusColor(a.status)} text-[9px] uppercase font-bold tracking-widest px-2 py-0.5`}>
                         {a.status}
                       </Badge>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-gray-500">Nenhum agendamento futuro nas próximas 24h.</div>
+                <div className="p-12 text-center text-neutral-500 italic font-medium">Nenhum agendamento futuro nas próximas 24h.</div>
               )}
             </div>
           </CardContent>
