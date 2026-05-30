@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import logo from '../assets/logo.png';
+import logobranca from '../assets/logobranca.png';
 
 const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -44,7 +44,7 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
           variant="outline"
           size="sm"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-white shadow-lg"
+          className="bg-neutral-950/80 border-[0.5px] border-neutral-800 text-[#DEAE60] hover:bg-neutral-900 hover:text-[#DEAE60] backdrop-blur-md shadow-xl"
         >
           {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
@@ -53,25 +53,19 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
       {/* Sidebar */}
       <div className={`
         fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-45
-        w-64 bg-white shadow-lg h-screen flex flex-col right-0 lg:right-auto
+        w-64 bg-neutral-950/80 border-r-[0.5px] border-neutral-800/80 backdrop-blur-xl shadow-2xl h-screen flex flex-col right-0 lg:right-auto
         ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
       `}>
         {/* Header */}
-        <div className="p-6 border-b">
-          <div className="flex items-center space-x-3">
-            <img src={logo} alt="Beleza Masculina" className="h-10 w-auto" />
-            <div>
-              <h2 className="font-bold text-gray-900 leading-tight">Beleza</h2>
-              <p className="text-sm text-amber-600 font-bold leading-tight">Masculina</p>
-            </div>
-          </div>
+        <div className="p-6 border-b-[0.5px] border-neutral-800/80 flex flex-col items-center justify-center">
+          <img src={logobranca} alt="Beleza Masculina" className="h-20 w-auto object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]" />
         </div>
 
         {/* Menu Principal */}
-        <div className="flex-1 py-6">
+        <div className="flex-1 py-6 overflow-y-auto">
           <div className="px-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              MENU PRINCIPAL
+            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-3 ml-2">
+              Menu Principal
             </p>
             <nav className="space-y-1">
               {menuItems.map((item) => {
@@ -82,16 +76,16 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
                   <button
                     key={item.id}
                     onClick={() => handleMenuItemClick(item.id)}
-                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    className={`w-full flex items-center px-4 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-amber-100 text-amber-900 border-r-2 border-amber-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-[#DEAE60] text-neutral-950 shadow-lg scale-[1.02]'
+                        : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-100'
                     }`}
                   >
-                    <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-amber-600' : 'text-gray-400'}`} />
+                    <Icon className={`mr-3 h-4 w-4 ${isActive ? 'text-neutral-950' : 'text-neutral-500'}`} />
                     {item.label}
                     {isActive && (
-                      <div className="ml-auto w-2 h-2 bg-amber-600 rounded-full"></div>
+                      <div className="ml-auto w-1.5 h-1.5 bg-neutral-950 rounded-full shadow-sm"></div>
                     )}
                   </button>
                 );
@@ -101,18 +95,18 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-              <span className="text-amber-600 font-semibold text-sm">
+        <div className="p-4 border-t-[0.5px] border-neutral-800/80">
+          <div className="flex items-center space-x-3 mb-4 px-2">
+            <div className="w-9 h-9 bg-neutral-950 rounded-full flex items-center justify-center border-[0.5px] border-[#DEAE60]/30 shadow-inner">
+              <span className="text-[#DEAE60] font-black text-xs uppercase">
                 {isYuri ? 'Y' : 'BM'}
               </span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white truncate uppercase tracking-tighter">
                 {isYuri ? 'Yuri Mendes' : 'Beleza Masculina'}
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
                 {isYuri ? 'Barbeiro' : 'Administrador'}
               </p>
             </div>
@@ -121,13 +115,21 @@ const Sidebar = ({ activeSection, onSectionChange, onLogout, user }) => {
             variant="outline"
             size="sm"
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900"
+            className="w-full bg-transparent border-[0.5px] border-neutral-800 text-neutral-400 hover:bg-red-950/30 hover:text-red-400 hover:border-red-900/30 transition-colors gap-2 font-bold uppercase tracking-wider text-xs"
           >
-            <LogOut className="h-4 w-4" />
-            Sair
+            <LogOut className="h-3 w-3" />
+            Sair do Sistema
           </Button>
         </div>
       </div>
+      
+      {/* Overlay Escuro para Mobile */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-neutral-950/80 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </>
   );
 };
