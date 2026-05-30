@@ -28,7 +28,7 @@ const Dashboard = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-neutral-950">
       <Sidebar 
         activeSection={activeSection}
         onSectionChange={setActiveSection}
