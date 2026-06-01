@@ -55,7 +55,6 @@ const AgendamentoPublico = () => {
 
   const buscarHorarios = async () => {
     setLoadingHorarios(true);
-    // CORRIGIDO AQUI: removida as chaves extras
     setFormData(prev => ({ ...prev, hora: '' })); 
     try {
       const endpoint = formData.barbeiro === 'Yuri' ? 'agendamentos-yuri' : 'agendamentos';
@@ -183,8 +182,8 @@ const AgendamentoPublico = () => {
                 <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
                   <User className="h-4 w-4 text-[#DEAE60]"/> 2. Seus Dados
                 </Label>
-                <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
-                <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]" />
+                <Input required placeholder="Seu Nome Completo" value={formData.cliente_nome} onChange={e => setFormData({...formData, cliente_nome: e.target.value})} className="bg-neutral-950 border-0 rounded-md text-white h-12 focus-visible:ring-1 focus-visible:ring-[#DEAE60]" />
+                <Input required placeholder="Telefone / WhatsApp" value={formData.cliente_telefone} onChange={e => setFormData({...formData, cliente_telefone: e.target.value})} className="bg-neutral-950 border-0 rounded-md text-white h-12 focus-visible:ring-1 focus-visible:ring-[#DEAE60]" />
               </div>
 
               <div className="space-y-4 pt-4 border-t border-neutral-800">
@@ -196,10 +195,10 @@ const AgendamentoPublico = () => {
                   const servicoEncontrado = SERVICOS_TABELA.find(s => s.nome === nomeServico);
                   setFormData({...formData, servicoObj: servicoEncontrado, hora: ''});
                 }}>
-                  <SelectTrigger className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]">
+                  <SelectTrigger className="bg-neutral-950 border-0 rounded-md text-white h-12 focus-visible:ring-1 focus-visible:ring-[#DEAE60]">
                     <SelectValue placeholder="Selecione o Serviço" />
                   </SelectTrigger>
-                  <SelectContent className="bg-neutral-900 border-[0.5px] border-neutral-800 text-white">
+                  <SelectContent className="bg-neutral-900 border-0 rounded-md text-white">
                     {SERVICOS_TABELA.map((s) => (
                       <SelectItem key={s.nome} value={s.nome}>
                         {s.nome}
@@ -216,7 +215,7 @@ const AgendamentoPublico = () => {
                       <Input 
                         readOnly 
                         value={formData.servicoObj ? Number(formData.servicoObj.preco || 0).toFixed(2).replace('.', ',') : '0,00'} 
-                        className="bg-neutral-950/50 text-white font-black pl-9 border-[0.5px] border-neutral-800/60 cursor-not-allowed h-12 focus-visible:ring-[#DEAE60]" 
+                        className="bg-neutral-950/50 text-white font-black pl-9 border-0 rounded-md cursor-not-allowed h-12 focus-visible:ring-1 focus-visible:ring-[#DEAE60]" 
                       />
                     </div>
                   </div>
@@ -224,8 +223,8 @@ const AgendamentoPublico = () => {
                   <div className="space-y-2">
                     <Label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest ml-1">Pagamento</Label>
                     <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
-                      <SelectTrigger className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 focus-visible:ring-[#DEAE60]"><SelectValue placeholder="Forma" /></SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-[0.5px] border-neutral-800 text-white">
+                      <SelectTrigger className="bg-neutral-950 border-0 rounded-md text-white h-12 focus-visible:ring-1 focus-visible:ring-[#DEAE60]"><SelectValue placeholder="Forma" /></SelectTrigger>
+                      <SelectContent className="bg-neutral-900 border-0 rounded-md text-white">
                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                         <SelectItem value="Pix">Pix</SelectItem>
                         <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
@@ -240,7 +239,7 @@ const AgendamentoPublico = () => {
                 <Label className="text-neutral-300 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-[#DEAE60]"/> 4. Data e Hora
                 </Label>
-                <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-neutral-950 border-[0.5px] border-neutral-800 text-white h-12 px-4 focus-visible:ring-[#DEAE60]" style={{ colorScheme: 'dark' }} />
+                <Input required type="date" min={hojeStr} value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} className="bg-neutral-950 border-0 rounded-md text-white h-12 px-4 focus-visible:ring-1 focus-visible:ring-[#DEAE60]" style={{ colorScheme: 'dark' }} />
                 
                 {formData.data && (
                   <div className="pt-2 animate-in fade-in duration-300">
@@ -256,7 +255,7 @@ const AgendamentoPublico = () => {
                           <button
                             key={h} type="button"
                             onClick={() => setFormData({...formData, hora: h})}
-                            className={`p-2 rounded-lg text-sm font-bold border transition-all ${formData.hora === h ? 'bg-[#DEAE60] text-neutral-950 border-[#DEAE60] shadow-md scale-[1.02]' : 'bg-neutral-950 text-neutral-400 border-[0.5px] border-neutral-800 hover:border-[#DEAE60]'}`}
+                            className={`p-2 rounded-md text-sm font-bold transition-all ${formData.hora === h ? 'bg-[#DEAE60] text-neutral-950 shadow-md scale-[1.02]' : 'bg-neutral-950 text-neutral-400 border-0 hover:text-[#DEAE60]'}`}
                           >
                             {h}
                           </button>
