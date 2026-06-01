@@ -91,7 +91,7 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Digite seu usuário"
                 required
-                className="w-full h-11 bg-neutral-950 border-[0.5px] border-neutral-800 text-white placeholder:text-neutral-600 focus-visible:ring-[#DEAE60] focus-visible:border-[#DEAE60] rounded-xl transition-all"
+                className="w-full h-11 bg-neutral-950 border-0 rounded-md text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#DEAE60] transition-all"
               />
             </div>
             <div className="space-y-2">
@@ -103,7 +103,7 @@ const Login = ({ onLogin }: { onLogin: (user: LoginResponse['user']) => void }) 
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite sua senha"
                 required
-                className="w-full h-11 bg-neutral-950 border-[0.5px] border-neutral-800 text-white placeholder:text-neutral-600 focus-visible:ring-[#DEAE60] focus-visible:border-[#DEAE60] rounded-xl transition-all"
+                className="w-full h-11 bg-neutral-950 border-0 rounded-md text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#DEAE60] transition-all"
               />
             </div>
             
