@@ -3,8 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, Calendar, Scissors, User, DollarSign, CalendarDays, ArrowRight, ArrowLeft, Clock } from 'lucide-react';
+import { CheckCircle, User, DollarSign, CalendarDays, ArrowLeft, Clock } from 'lucide-react';
 import logobranca from '../assets/logobranca.png'; 
 
 const SERVICOS_TABELA = [
@@ -31,7 +30,9 @@ const SERVICOS_TABELA = [
   { nome: 'Tratamento V.O', preco: 90.00 }
 ];
 
-const hojeStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+const dataAtual = new Date();
+const offsetLocal = dataAtual.getTimezoneOffset() * 60000;
+const hojeStr = new Date(dataAtual.getTime() - offsetLocal).toISOString().split('T')[0];
 
 const AgendamentoPublico = () => {
   const [step, setStep] = useState(1);
@@ -56,7 +57,7 @@ const AgendamentoPublico = () => {
     if (agendamentoSalvo) {
       try {
         const parsed = JSON.parse(agendamentoSalvo);
-        if (parsed.data >= hojeStr) {
+        if (parsed.data && parsed.data >= hojeStr) {
           setFormData(parsed);
           setSucesso(true);
         } else {
@@ -99,7 +100,8 @@ const AgendamentoPublico = () => {
     e.preventDefault();
     if (salvando) return; 
 
-    const telLimpo = formData.cliente_telefone.replace(/\D/g, '');
+    // Blindagem de segurança (Impede crash de array se o telefone for vazio)
+    const telLimpo = (formData.cliente_telefone || '').replace(/\D/g, '');
     if (telLimpo.length < 10) {
       alert('Por favor, informe um número de telefone ou WhatsApp válido com o DDD.');
       return;
@@ -113,8 +115,8 @@ const AgendamentoPublico = () => {
       const payload = {
         cliente_nome: formData.cliente_nome,
         cliente_telefone: formData.cliente_telefone,
-        servico: formData.servicoObj.nome,
-        preco: formData.servicoObj.preco,
+        servico: formData.servicoObj?.nome || '',
+        preco: formData.servicoObj?.preco || 0,
         data: formData.data,
         hora: formData.hora,
         forma_pagamento: formData.forma_pagamento,
@@ -128,8 +130,8 @@ const AgendamentoPublico = () => {
       });
 
       if (response.ok) {
-        // Salva no localStorage para reconhecer o cliente na próxima visita
-        localStorage.setItem('meuAgendamentoBM', JSON.stringify(payload));
+        // Salva o estado atual inteiro no localStorage para garantir que a tela de sucesso não quebre
+        localStorage.setItem('meuAgendamentoBM', JSON.stringify(formData));
         setSucesso(true);
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -151,16 +153,17 @@ const AgendamentoPublico = () => {
     setStep(1);
   };
 
-  // FILTRO DE 1 HORA
+  // FILTRO DE 1 HORA E PREVENÇÃO DE CRASH
   let horariosFiltrados = Array.isArray(horariosLivres) ? horariosLivres : [];
   let isServicoLongo = false;
 
-  if (formData.servicoObj && horariosFiltrados.length > 0) {
+  if (formData.servicoObj?.nome && horariosFiltrados.length > 0) {
     const sLower = formData.servicoObj.nome.toLowerCase();
     isServicoLongo = sLower.includes('corte + barba') || sLower.includes('combo corte') || sLower.includes('luzes');
     
     if (isServicoLongo) {
       horariosFiltrados = horariosFiltrados.filter(hora => {
+        if (!hora || typeof hora !== 'string') return false;
         let [h, m] = hora.split(':').map(Number);
         m += 30;
         if (m >= 60) { m -= 60; h += 1; }
@@ -178,7 +181,9 @@ const AgendamentoPublico = () => {
         <Card className="max-w-md w-full text-center py-12 shadow-2xl z-10 bg-neutral-900/90 border-0 backdrop-blur-md rounded-md animate-in zoom-in duration-300">
           <CheckCircle className="h-20 w-20 text-[#DEAE60] mx-auto mb-6 drop-shadow-lg" />
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Agendamento Confirmado!</h2>
-          <p className="text-neutral-400 mb-6 px-4">Sua vaga está garantida. Te esperamos no dia <strong className="text-white">{formData.data ? formData.data.split('-').reverse().join('/') : ''}</strong> às <strong className="text-white">{formData.hora}</strong> com o profissional <strong className="text-white">{formData.barbeiro}</strong>.</p>
+          <p className="text-neutral-400 mb-6 px-4">
+            Sua vaga está garantida. Te esperamos no dia <strong className="text-white">{(formData.data || '').split('-').reverse().join('/')}</strong> às <strong className="text-white">{formData.hora}</strong> com o profissional <strong className="text-white">{formData.barbeiro}</strong>.
+          </p>
           <Button onClick={handleNovoAgendamento} className="w-full max-w-xs mx-auto bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 font-bold rounded-md uppercase tracking-widest text-xs h-12">
             Fazer outro agendamento
           </Button>
@@ -237,13 +242,13 @@ const AgendamentoPublico = () => {
                       <button
                         key={s.nome}
                         onClick={() => { setFormData({ ...formData, servicoObj: s, hora: '' }); setStep(2); }}
-                        className={`p-4 rounded-md border-0 text-left transition-all ${formData.servicoObj?.nome === s.nome ? 'bg-[#DEAE60] text-neutral-950 scale-[1.02]' : 'bg-neutral-950/50 text-white hover:bg-neutral-800'}`}
+                        className={`p-4 rounded-md border-0 text-left transition-all ${formData.servicoObj?.nome === s.nome ? 'bg-[#DEAE60] text-neutral-950 scale-[1.02] shadow-md' : 'bg-neutral-950/50 text-white hover:bg-neutral-800'}`}
                       >
                         <div className="font-bold text-sm mb-1 leading-tight">{s.nome}</div>
                         <div className="flex justify-between items-center mt-2">
-                          <span className={`text-xs font-black ${formData.servicoObj?.nome === s.nome ? 'text-neutral-900' : 'text-[#DEAE60]'}`}>R$ {s.preco.toFixed(2).replace('.', ',')}</span>
-                          <span className={`text-[10px] font-bold uppercase tracking-widest ${formData.servicoObj?.nome === s.nome ? 'text-neutral-800' : 'text-neutral-500'}`}>
-                            <Clock className="h-3 w-3 inline mr-1" />{isLongo ? '1 Hora' : '30 Min'}
+                          <span className={`text-xs font-black ${formData.servicoObj?.nome === s.nome ? 'text-neutral-900' : 'text-[#DEAE60]'}`}>R$ {(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center ${formData.servicoObj?.nome === s.nome ? 'text-neutral-800' : 'text-neutral-500'}`}>
+                            <Clock className="h-3 w-3 mr-1" />{isLongo ? '1 Hora' : '30 Min'}
                           </span>
                         </div>
                       </button>
@@ -265,7 +270,7 @@ const AgendamentoPublico = () => {
                     className={`p-6 rounded-md border-0 text-center transition-all flex flex-col items-center justify-center ${formData.barbeiro === 'Lucas' ? 'bg-[#DEAE60] text-neutral-950 scale-[1.02] shadow-xl' : 'bg-neutral-950/50 text-neutral-300 hover:bg-neutral-800'}`}
                   >
                     <div className="w-20 h-20 bg-neutral-900 rounded-full mb-3 flex items-center justify-center overflow-hidden border border-neutral-700">
-                      {/* BASTA JOGAR A FOTO lucas.png NA PASTA PUBLIC */}
+                      {/* BASTA JOGAR A FOTO foto-lucas.png NA PASTA PUBLIC */}
                       <img src="/foto-lucas.png" alt="Lucas" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
                       <User className="h-8 w-8 text-neutral-600 hidden" />
                     </div>
@@ -279,7 +284,7 @@ const AgendamentoPublico = () => {
                     className={`p-6 rounded-md border-0 text-center transition-all flex flex-col items-center justify-center ${formData.barbeiro === 'Yuri' ? 'bg-[#DEAE60] text-neutral-950 scale-[1.02] shadow-xl' : 'bg-neutral-950/50 text-neutral-300 hover:bg-neutral-800'}`}
                   >
                     <div className="w-20 h-20 bg-neutral-900 rounded-full mb-3 flex items-center justify-center overflow-hidden border border-neutral-700">
-                      {/* BASTA JOGAR A FOTO yuri.png NA PASTA PUBLIC */}
+                      {/* BASTA JOGAR A FOTO foto-yuri.png NA PASTA PUBLIC */}
                       <img src="/foto-yuri.png" alt="Yuri" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
                       <User className="h-8 w-8 text-neutral-600 hidden" />
                     </div>
@@ -346,7 +351,7 @@ const AgendamentoPublico = () => {
                 <div className="bg-[#DEAE60]/10 border border-[#DEAE60]/20 p-4 rounded-md mb-6">
                   <p className="text-[10px] text-[#DEAE60] font-bold uppercase tracking-widest mb-1">Resumo do Agendamento</p>
                   <p className="text-white font-bold text-sm">{formData.servicoObj?.nome}</p>
-                  <p className="text-neutral-400 text-xs mt-1">Dia <strong className="text-white">{formData.data.split('-').reverse().join('/')}</strong> às <strong className="text-white">{formData.hora}</strong> com <strong className="text-white">{formData.barbeiro}</strong></p>
+                  <p className="text-neutral-400 text-xs mt-1">Dia <strong className="text-white">{(formData.data || '').split('-').reverse().join('/')}</strong> às <strong className="text-white">{formData.hora}</strong> com <strong className="text-white">{formData.barbeiro}</strong></p>
                 </div>
 
                 <div className="space-y-2">
@@ -372,24 +377,26 @@ const AgendamentoPublico = () => {
                   />
                 </div>
 
+                {/* SUBSTITUÍDO O COMPONENTE DE SELECT PELOS 4 BOTÕES DIRETOS */}
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">Como deseja pagar?</Label>
-                  <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({...formData, forma_pagamento: v})}>
-                    <SelectTrigger className="bg-neutral-950 border-0 rounded-md text-white h-12 focus-visible:ring-1 focus-visible:ring-[#DEAE60]">
-                      <SelectValue placeholder="Forma de Pagamento" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-0 rounded-md text-white">
-                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                      <SelectItem value="Pix">Pix</SelectItem>
-                      <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
-                      <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Dinheiro', 'Pix', 'Cartão de Débito', 'Cartão de Crédito'].map(forma => (
+                      <button 
+                        key={forma}
+                        type="button" 
+                        onClick={() => setFormData({...formData, forma_pagamento: forma})}
+                        className={`p-3 rounded-md text-xs font-bold transition-all border ${formData.forma_pagamento === forma ? 'bg-[#DEAE60] text-neutral-950 border-[#DEAE60] shadow-md' : 'bg-neutral-950/50 text-neutral-400 border-neutral-800 hover:text-white hover:bg-neutral-800'}`}
+                      >
+                        {forma}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <Button 
                   type="submit" 
-                  disabled={salvando || !formData.cliente_nome || formData.cliente_telefone.length < 10} 
+                  disabled={salvando || !formData.cliente_nome || (formData.cliente_telefone || '').replace(/\D/g, '').length < 10} 
                   className="w-full bg-[#DEAE60] hover:bg-[#DEAE60]/90 text-neutral-950 rounded-md h-14 text-sm font-black shadow-xl mt-4 uppercase tracking-widest"
                 >
                   {salvando ? 'Confirmando...' : 'Confirmar Agendamento'}
