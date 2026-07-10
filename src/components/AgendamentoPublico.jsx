@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, User, DollarSign, CalendarDays, ArrowLeft, Clock } from 'lucide-react';
 import logobranca from '../assets/logobranca.png'; 
+import fotoLucas from '../assets/foto-lucas.png';
+import fotoYuri from '../assets/foto-yuri.png';
 
 const SERVICOS_TABELA = [
   { nome: 'Acabamento (Pezinho)', preco: 25.00 },
@@ -176,7 +178,7 @@ const AgendamentoPublico = () => {
   // TELA DE SUCESSO (OU RETORNO DO CLIENTE)
   if (sucesso) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative p-4 bg-neutral-950">
+      <div translate="no" className="notranslate min-h-screen flex items-center justify-center relative p-4 bg-neutral-950">
         <img src="/fundologin.png" className="absolute inset-0 w-full h-full object-cover z-0 opacity-40" alt="Fundo" />
         <Card className="max-w-md w-full text-center py-12 shadow-2xl z-10 bg-neutral-900/90 border-0 backdrop-blur-md rounded-md animate-in zoom-in duration-300">
           <CheckCircle className="h-20 w-20 text-[#DEAE60] mx-auto mb-6 drop-shadow-lg" />
@@ -194,7 +196,7 @@ const AgendamentoPublico = () => {
 
   // RENDERIZAÇÃO CONDICIONAL DOS PASSOS
   return (
-    <div className="min-h-screen flex flex-col relative bg-neutral-950 overflow-x-hidden">
+    <div translate="no" className="notranslate min-h-screen flex flex-col relative bg-neutral-950 overflow-x-hidden">
       <img src="/fundologin.png" alt="Fundo" className="fixed inset-0 w-full h-full object-cover z-0 opacity-40" />
       <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-[2px] z-10" />
       
@@ -269,10 +271,15 @@ const AgendamentoPublico = () => {
                     onClick={() => { setFormData({ ...formData, barbeiro: 'Lucas', hora: '' }); setStep(3); }}
                     className={`p-6 rounded-md border-0 text-center transition-all flex flex-col items-center justify-center ${formData.barbeiro === 'Lucas' ? 'bg-[#DEAE60] text-neutral-950 scale-[1.02] shadow-xl' : 'bg-neutral-950/50 text-neutral-300 hover:bg-neutral-800'}`}
                   >
-                    <div className="w-20 h-20 bg-neutral-900 rounded-full mb-3 flex items-center justify-center overflow-hidden border border-neutral-700">
-                      {/* BASTA JOGAR A FOTO foto-lucas.png NA PASTA PUBLIC */}
-                      <img src="/foto-lucas.png" alt="Lucas" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-                      <User className="h-8 w-8 text-neutral-600 hidden" />
+                    <div className="relative w-20 h-20 bg-neutral-900 rounded-full mb-3 flex items-center justify-center overflow-hidden border border-neutral-700">
+                      {/* Ícone Fallback escondido atrás da imagem */}
+                      <User className="absolute h-8 w-8 text-neutral-600" />
+                      <img 
+                        src={fotoLucas} 
+                        alt="Lucas" 
+                        className="absolute inset-0 w-full h-full object-cover z-10 bg-neutral-900" 
+                        onError={(e) => { e.target.style.display = 'none'; }} 
+                      />
                     </div>
                     <span className="font-black text-lg uppercase tracking-tight">Lucas</span>
                     <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${formData.barbeiro === 'Lucas' ? 'text-neutral-800' : 'text-[#DEAE60]'}`}>Barbeiro</span>
@@ -283,10 +290,15 @@ const AgendamentoPublico = () => {
                     onClick={() => { setFormData({ ...formData, barbeiro: 'Yuri', hora: '' }); setStep(3); }}
                     className={`p-6 rounded-md border-0 text-center transition-all flex flex-col items-center justify-center ${formData.barbeiro === 'Yuri' ? 'bg-[#DEAE60] text-neutral-950 scale-[1.02] shadow-xl' : 'bg-neutral-950/50 text-neutral-300 hover:bg-neutral-800'}`}
                   >
-                    <div className="w-20 h-20 bg-neutral-900 rounded-full mb-3 flex items-center justify-center overflow-hidden border border-neutral-700">
-                      {/* BASTA JOGAR A FOTO foto-yuri.png NA PASTA PUBLIC */}
-                      <img src="/foto-yuri.png" alt="Yuri" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-                      <User className="h-8 w-8 text-neutral-600 hidden" />
+                    <div className="relative w-20 h-20 bg-neutral-900 rounded-full mb-3 flex items-center justify-center overflow-hidden border border-neutral-700">
+                      {/* Ícone Fallback escondido atrás da imagem */}
+                      <User className="absolute h-8 w-8 text-neutral-600" />
+                      <img 
+                        src={fotoYuri} 
+                        alt="Yuri" 
+                        className="absolute inset-0 w-full h-full object-cover z-10 bg-neutral-900" 
+                        onError={(e) => { e.target.style.display = 'none'; }} 
+                      />
                     </div>
                     <span className="font-black text-lg uppercase tracking-tight">Yuri</span>
                     <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${formData.barbeiro === 'Yuri' ? 'text-neutral-800' : 'text-[#DEAE60]'}`}>Barbeiro</span>
@@ -377,7 +389,6 @@ const AgendamentoPublico = () => {
                   />
                 </div>
 
-                {/* SUBSTITUÍDO O COMPONENTE DE SELECT PELOS 4 BOTÕES DIRETOS */}
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">Como deseja pagar?</Label>
                   <div className="grid grid-cols-2 gap-2">
